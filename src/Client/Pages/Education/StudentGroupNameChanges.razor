@@ -1,0 +1,48 @@
+﻿@page "/education/student-group-name-changes"
+@attribute [MustHavePermission(EduAction.View, EduResource.StudentGroupNameChanges)]
+
+@inject IStringLocalizer<StudentGroupNameChanges> L
+@inject IStudentGroupNameChangesClient StudentGroupNameChangesClient
+
+<EduTitle Title="@L["StudentGroupNameChanges"]" Description="@L["Manage StudentGroupNameChanges."]" />
+
+<EntityTable TEntity="StudentGroupNameChangeDto" TId="int" TRequest="AddEditStudentGroupNameChangeCommand" Context="@Context">
+
+    <EditFormContent>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.StudentGroupId)" @bind-Value="context.StudentGroupId" Label="@L["Id"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" For="@(() => context.Name)" @bind-Value="context.Name" Label="@L["Name"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="DateTime" For="@(() => context.Date)" @bind-Value="context.Date" Label="@L["Date"]"/>
+        </MudItem>
+    </EditFormContent>
+	
+</EntityTable>
+
+@code
+{
+    protected EntityServerTableContext<StudentGroupNameChangeDto, int, AddEditStudentGroupNameChangeCommand> Context { get; set; } = default!;
+
+    protected override void OnInitialized() =>
+        Context = new(
+            entityName: L["StudentGroupNameChange"],
+            entityNamePlural: L["StudentGroupNameChanges"],
+            entityResource: EduResource.StudentGroupNameChanges,
+            fields: new()
+            {
+                new(studentGroupNameChange => studentGroupNameChange.StudentGroupId, L["Id"], "Id"),
+                new(studentGroupNameChange => studentGroupNameChange.Name, L["Id"], "Id"),
+                new(studentGroupNameChange => studentGroupNameChange.Date.ToShortDateString(), L["Id"], "Id"),
+            },
+            idFunc: studentGroupNameChange => studentGroupNameChange.Id,
+            searchFunc: async filter => (await StudentGroupNameChangesClient
+                .SearchAsync(filter.Adapt<SearchStudentGroupNameChangesRequest>()))
+                .Adapt<PaginationResponse<StudentGroupNameChangeDto>>(),
+            createFunc: async studentGroupNameChange => await StudentGroupNameChangesClient.CreateAsync(studentGroupNameChange.Adapt<AddEditStudentGroupNameChangeCommand>()),
+            updateFunc: async (id, studentGroupNameChange) => await StudentGroupNameChangesClient.UpdateAsync(id, studentGroupNameChange),
+            deleteFunc: async id => await StudentGroupNameChangesClient.DeleteAsync(id),
+            exportAction:String.Empty);
+}

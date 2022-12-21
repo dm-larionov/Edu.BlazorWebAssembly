@@ -1,0 +1,53 @@
+﻿@page "/education/fses-category-partitions"
+@attribute [MustHavePermission(EduAction.View, EduResource.FsesCategoryPartitions)]
+
+@inject IStringLocalizer<FsesCategoryPartitions> L
+@inject IFsesCategoryPartitionsClient FsesCategoryPartitionsClient
+
+<EduTitle Title="@L["FsesCategoryPartitions"]" Description="@L["Manage FsesCategoryPartitions."]" />
+
+<EntityTable TEntity="FsesCategoryPartitionDto" TId="int" TRequest="AddEditFsesCategoryPartitionCommand" Context="@Context">
+
+    <EditFormContent>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.FirstPartNumber)" @bind-Value="context.FirstPartNumber" Label="@L["Id"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.SecondPartNumber)" @bind-Value="context.SecondPartNumber" Label="@L["Id"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int?" For="@(() => context.ThirdPathNumber)" @bind-Value="context.ThirdPathNumber" Label="@L["Id"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" For="@(() => context.Name)" @bind-Value="context.Name" Label="@L["Name"]" />
+        </MudItem>
+    </EditFormContent>
+
+</EntityTable>
+
+@code
+{
+    protected EntityServerTableContext<FsesCategoryPartitionDto, int, AddEditFsesCategoryPartitionCommand> Context { get; set; } = default!;
+
+    protected override void OnInitialized() =>
+        Context = new(
+            entityName: L["FsesCategoryPartition"],
+            entityNamePlural: L["FsesCategoryPartitions"],
+            entityResource: EduResource.FsesCategoryPartitions,
+            fields: new()
+            {
+                new(fsesCategoryPartition => fsesCategoryPartition.FirstPartNumber, L["Id"], "Id"),
+                new(fsesCategoryPartition => fsesCategoryPartition.SecondPartNumber, L["Id"], "Id"),
+                new(fsesCategoryPartition => fsesCategoryPartition.ThirdPathNumber, L["Id"], "Id"),
+                new(fsesCategoryPartition => fsesCategoryPartition.Name, L["Name"], "Name"),
+            },
+            idFunc: fsesCategoryPartition => fsesCategoryPartition.Id,
+            searchFunc: async filter => (await FsesCategoryPartitionsClient
+                .SearchAsync(filter.Adapt<SearchFsesCategoryPartitionsRequest>()))
+                .Adapt<PaginationResponse<FsesCategoryPartitionDto>>(),
+			enableAdvancedSearch:false,
+            createFunc: async fsesCategoryPartition => await FsesCategoryPartitionsClient.CreateAsync(fsesCategoryPartition.Adapt<AddEditFsesCategoryPartitionCommand>()),
+            updateFunc: async (id, fsesCategoryPartition) => await FsesCategoryPartitionsClient.UpdateAsync(id, fsesCategoryPartition),
+            deleteFunc: async id => await FsesCategoryPartitionsClient.DeleteAsync(id),
+            exportAction: string.Empty);
+}

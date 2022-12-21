@@ -1,0 +1,42 @@
+﻿@page "/education/fixed-discipline-statuses"
+@attribute [MustHavePermission(EduAction.View, EduResource.FixedDisciplineStatuses)]
+
+@inject IStringLocalizer<FixedDisciplineStatuses> L
+@inject IFixedDisciplineStatusesClient FixedDisciplineStatusesClient
+
+@using Edu.BlazorWebAssembly.Client.Pages.Education.Autocomplete;
+
+<EduTitle Title="@L["Прикрепление к группе"]" Description="@L["Закрепление студ. группы за уч. планом."]" />
+
+<EntityTable TEntity="FixedDisciplineStatusDto" TId="int" TRequest="AddEditFixedDisciplineStatusCommand" Context="@Context">
+
+    <EditFormContent>
+        <MudItem xs="12" md="6">
+            <StudentGroupAutocomplete For="@(() => context.Id)" @bind-Value="context.Id" OffsetY="true" />
+        </MudItem>
+    </EditFormContent>
+
+</EntityTable>
+
+@code
+{
+    protected EntityServerTableContext<FixedDisciplineStatusDto, int, AddEditFixedDisciplineStatusCommand> Context { get; set; } = default!;
+
+    protected override void OnInitialized() =>
+        Context = new(
+            entityName: L["Прикрепление к группе"],
+            entityNamePlural: L["Закрепление за студ. группой"],
+            entityResource: EduResource.FixedDisciplineStatuses,
+            fields: new()
+            {
+                new(fixedDisciplineStatus => fixedDisciplineStatus.Name, L["Name"]),
+            },
+            idFunc: fixedDisciplineStatus => fixedDisciplineStatus.Id,
+            searchFunc: async filter => (await FixedDisciplineStatusesClient
+                .SearchAsync(filter.Adapt<SearchFixedDisciplineStatusesRequest>()))
+                .Adapt<PaginationResponse<FixedDisciplineStatusDto>>(),
+            createFunc: async fixedDisciplineStatus => await FixedDisciplineStatusesClient.CreateAsync(fixedDisciplineStatus.Adapt<AddEditFixedDisciplineStatusCommand>()),
+            updateFunc: async (id, fixedDisciplineStatus) => await FixedDisciplineStatusesClient.UpdateAsync(id, fixedDisciplineStatus),
+            deleteFunc: async id => await FixedDisciplineStatusesClient.DeleteAsync(id),
+            exportAction:String.Empty);
+}

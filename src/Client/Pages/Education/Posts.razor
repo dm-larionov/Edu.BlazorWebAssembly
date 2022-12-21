@@ -1,0 +1,40 @@
+﻿@page "/education/posts"
+@attribute [MustHavePermission(EduAction.View, EduResource.Posts)]
+
+@inject IStringLocalizer<Posts> L
+@inject IPostsClient PostsClient
+
+<EduTitle Title="@L["Posts"]" Description="@L["Manage Posts."]" />
+
+<EntityTable TEntity="PostDto" TId="int" TRequest="AddEditPostCommand" Context="@Context">
+
+    <EditFormContent>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" For="@(() => context.Name)" @bind-Value="context.Name" Label="@L["Name"]" />
+        </MudItem>
+    </EditFormContent>
+
+</EntityTable>
+
+@code
+{
+    protected EntityServerTableContext<PostDto, int, AddEditPostCommand> Context { get; set; } = default!;
+
+    protected override void OnInitialized() =>
+        Context = new(
+            entityName: L["Post"],
+            entityNamePlural: L["Posts"],
+            entityResource: EduResource.Posts,
+            fields: new()
+            {
+                new(post => post.Name, L["Name"], "Name"),
+            },
+            idFunc: post => post.Id,
+            searchFunc: async filter => (await PostsClient
+                .SearchAsync(filter.Adapt<SearchPostsRequest>()))
+                .Adapt<PaginationResponse<PostDto>>(),
+            createFunc: async post => await PostsClient.CreateAsync(post.Adapt<AddEditPostCommand>()),
+            updateFunc: async (id, post) => await PostsClient.UpdateAsync(id, post),
+            deleteFunc: async id => await PostsClient.DeleteAsync(id),
+            exportAction:String.Empty);
+}

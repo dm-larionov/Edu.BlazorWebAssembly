@@ -1,0 +1,104 @@
+﻿@page "/education/student-groups"
+@attribute [MustHavePermission(EduAction.View, EduResource.StudentGroups)]
+
+@inject IStringLocalizer<StudentGroups> L
+@inject IStudentGroupsClient StudentGroupsClient
+@inject IReceivedEducationsClient ReceivedEducationsClient
+@inject IReceivedSpecialtiesClient ReceivedSpecialtiesClient
+@inject IEducationPlansClient EducationPlansClient
+
+@using Edu.BlazorWebAssembly.Client.Pages.Education.Autocomplete;
+
+<EduTitle Title="@L["Студенческие группы"]" Description="@L["Управление студенческими группами."]" />
+
+<EntityTable TEntity="StudentGroupDto" TId="int" TRequest="AddEditStudentGroupCommand" Context="@Context">
+
+	<EditFormContent>
+		<MudItem xs="12" md="6">
+			<MudTextField T="string" For="@(() => context.Name)" @bind-Value="context.Name" Label="@L["Наименование"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<MudTextField T="byte" For="@(() => context.CourseNumber)" @bind-Value="context.CourseNumber" Label="@L["Курс"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<ReceivedEducationAutocomplete For="@(() => context.ReceivedEducationId)" @bind-Value="context.ReceivedEducationId" OffsetY="true" Label="@L["Квалификация"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<EducationPlanAutocomplete T="int?" For="@(() => context.EducationPlanId)" @bind-Value="context.EducationPlanId" OffsetY="true" Label="@L["Учебный план"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<MudTextField T="int" For="@(() => context.ReceiptYear)" @bind-Value="context.ReceiptYear" Label="@L["Год поступления"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<MudTextField T="byte" For="@(() => context.StudentQuantity)" @bind-Value="context.StudentQuantity" Label="@L["Кол-во студ."]" />
+		</MudItem>
+	</EditFormContent>
+
+</EntityTable>
+
+@code
+{
+	protected EntityServerTableContext<StudentGroupDto, int, AddEditStudentGroupCommand> Context { get; set; } = default!;
+	protected ICollection<ReceivedEducationDto> _receivedEducations = default!;
+	protected ICollection<ReceivedSpecialtyDto> _receivedSpecialties = default!;
+	protected ICollection<EducationPlanDto> _educationPlans = default!;
+
+	protected override void OnInitialized()
+	{
+		Context = new(
+			entityName: L["Студенческие группы"],
+			entityNamePlural: L["Студенческие группы"],
+			entityResource: EduResource.StudentGroups,
+			fields: new()
+				{
+					new(studentGroup => studentGroup.Name, L["Наименование"], "Наименование"),
+					new(studentGroup => studentGroup.CourseNumber, L["Курс"], "Курс"),
+					//new(studentGroup => studentGroup.CuratorId, L["Куратор"], "Куратор"),
+					new(studentGroup => GetReceivedEducationName(studentGroup.ReceivedEducationId), L["Квалификация"], "Квалификация"),
+					new(studentGroup => GetEducationPlanName(studentGroup.EducationPlanId), L["Уч. план"], "Уч. план"),
+					new(studentGroup => studentGroup.ReceiptYear, L["Год поступления"], "Год поступления"),
+					new(studentGroup => studentGroup.StudentQuantity, L["Кол-во студ."], "Кол-во студ."),
+				},
+			idFunc: studentGroup => studentGroup.Id,
+			searchFunc: async filter =>
+			{
+				var studentGroups = (await StudentGroupsClient
+					.SearchAsync(filter.Adapt<SearchStudentGroupsRequest>()))
+					.Adapt<PaginationResponse<StudentGroupDto>>();
+				_receivedEducations = await ReceivedEducationsClient.GetAllByIdRangeAsync(studentGroups.Data.Select(x => x.ReceivedEducationId).Distinct());
+				_receivedSpecialties= await ReceivedSpecialtiesClient.GetAllByIdRangeAsync(_receivedEducations.Select(x => x.ReceivedSpecialtyId).Distinct());
+				_educationPlans = await EducationPlansClient.GetAllByIdRangeAsync(studentGroups.Data.Where(x => x.EducationPlanId is not null).Select(x => (int)x.EducationPlanId).Distinct());
+				return studentGroups;
+			},
+			createFunc: async studentGroup => await StudentGroupsClient.CreateAsync(studentGroup.Adapt<AddEditStudentGroupCommand>()),
+			updateFunc: async (id, studentGroup) => await StudentGroupsClient.UpdateAsync(id, studentGroup),
+			deleteFunc: async id => await StudentGroupsClient.DeleteAsync(id),
+			exportAction: String.Empty);
+	}
+
+	private string GetReceivedSpecialtyName(int id)
+	{
+		var result = _receivedSpecialties.FirstOrDefault(x => x.Id == id);
+		if (result is null)
+			return string.Empty;
+		return $"{result.Qualification}";
+	}
+
+	private string GetReceivedEducationName(int id)
+	{
+		var result = _receivedEducations.FirstOrDefault(x => x.Id == id);
+		if (result is null)
+			return string.Empty;
+		return $"{GetReceivedSpecialtyName(result.ReceivedSpecialtyId)}";
+	}
+
+	private string GetEducationPlanName(int? id)
+	{
+	    if (id is null)
+	        return string.Empty;
+		var result = _educationPlans.FirstOrDefault(x => x.Id == id);
+		if (result is null)
+			return string.Empty;
+		return $"{result.Name}";
+	}
+}

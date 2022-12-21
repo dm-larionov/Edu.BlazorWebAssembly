@@ -1,0 +1,59 @@
+﻿@page "/login"
+@attribute [AllowAnonymous]
+@inject IStringLocalizer<Login> L
+@inject IStringLocalizer<SharedResource> LS
+
+<div class="d-flex justify-center mt-4">
+	<img src="text-book.png" Style="height:250px" />
+	@*
+		<video class="video-block__video" disablepictureinpicture autoplay plays inline muted loop preload playsinline style="height: 250px; -webkit-mask-box-image: url('mask.svg'); mask-image: url('');">
+		<source src="gigamine.mp4" type="video/mp4">
+		</video>
+	*@
+</div>
+<div class="edu-center-text">
+	<MudText Typo="Typo.h4" GutterBottom="true">Авторизация</MudText>
+	<MudText>
+		@L["Введите данные для входа"]
+	</MudText>
+</div>
+<br />
+<EditForm Model="@_tokenRequest" OnValidSubmit="SubmitAsync">
+	<MudGrid>
+		<DataAnnotationsValidator />
+		<CustomValidation @ref="_customValidation" />
+		<MudItem xs="12">
+			<MudTextField T="string" Label="@L["E-mail"]" Variant="Variant.Outlined" @bind-Value="_tokenRequest.Email"
+						  For="@(() => _tokenRequest.Email)" />
+		</MudItem>
+		<MudItem xs="12">
+			<MudTextField Label="@L["Password"]" Variant="Variant.Outlined" @bind-Value="_tokenRequest.Password"
+						  For="@(() => _tokenRequest.Password)" InputType="@_passwordInput" Adornment="Adornment.End"
+						  AdornmentIcon="@_passwordInputIcon" OnAdornmentClick="TogglePasswordVisibility" />
+		</MudItem>
+
+		@*
+			<MudItem xs="12" md="6">
+			<MudButton StartIcon="@Icons.Filled.AppRegistration" Link="/users/self-register">@L["Регистрация"]</MudButton>
+			</MudItem>
+		*@
+		<MudItem xs="12" md="6">
+			<MudButton StartIcon="@Icons.Filled.LockReset" Link="/account/forgot-password">@L["Забыл пароль"]</MudButton>
+		</MudItem>
+		<MudItem xs="12" Class="d-flex justify-center">
+			<MudButton ButtonType="ButtonType.Submit" Disabled="BusySubmitting" Variant="Variant.Filled"
+					   Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Filled.Login" Style="width: 100%;">@L["Войти"]</MudButton>
+		</MudItem>
+        <MudStack Row="true">
+            <MudItem xs="18">
+                <MudButton StartIcon="@Icons.Filled.Password" OnClick="FillAdministratorCredentials">@L["Админ"]</MudButton>
+            </MudItem>
+            <MudItem xs="18">
+                <MudButton StartIcon="@Icons.Filled.Password" OnClick="FillEduHeadCredentials">@L["Рук. Умо"]</MudButton>
+            </MudItem>
+            <MudItem xs="18">
+                <MudButton StartIcon="@Icons.Filled.Password" OnClick="FillTeacherCredentials">@L["Препод."]</MudButton>
+            </MudItem>
+        </MudStack>
+    </MudGrid>
+</EditForm>

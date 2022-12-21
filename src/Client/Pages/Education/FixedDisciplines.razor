@@ -1,0 +1,132 @@
+﻿@page "/education/fixed-disciplines"
+@attribute [MustHavePermission(EduAction.View, EduResource.FixedDisciplines)]
+
+@inject IStringLocalizer<FixedDisciplines> L
+
+@inject IFixedDisciplinesClient FixedDisciplinesClient
+@inject IEmployeesClient EmployeesClient
+@inject IDisciplineSemestersClient DisciplineSemestersClient
+@inject IStudentGroupsClient StudentGroupsClient
+@inject IFixedDisciplineStatusesClient FixedDisciplineStatusesClient
+@inject IDisciplinesClient DisciplinesClient
+
+@using Edu.BlazorWebAssembly.Client.Pages.Education.Autocomplete;
+
+<EduTitle Title="@L["Согласование дисциплин"]" Description="@L["Раздел согласования читаемых дисциплин."]" />
+
+<EntityTable TEntity="FixedDisciplineDto" TId="int" TRequest="AddEditFixedDisciplineCommand" Context="@Context">
+	<ExtraActions>
+		@if (context.FixedDisciplineStatusId != 1 && context.FixedDisciplineStatusId != 2)
+		{
+			<MudMenuItem Style="color: red !important" @onclick="@(async () => await FixedDisciplinesClient.DeleteAsync(context.Id))">@L["Удалить"]</MudMenuItem>
+		}
+    </ExtraActions>
+	<EditFormContent>
+		<MudItem xs="12" md="6">
+			<EmployeeAutocomplete For="@(() => context.FixingEmployeeId)" @bind-Value="context.FixingEmployeeId" OffsetY="true" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<DisciplineSemesterAutocomplete For="@(() => context.DisciplineSemesterId)" @bind-Value="context.DisciplineSemesterId" OffsetY="true" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<StudentGroupAutocomplete For="@(() => context.StudentGroupId)" @bind-Value="context.StudentGroupId" OffsetY="true" />
+		</MudItem>
+	</EditFormContent>
+
+</EntityTable>
+
+@code
+{
+	protected EntityServerTableContext<FixedDisciplineDto, int, AddEditFixedDisciplineCommand> Context { get; set; } = default!;
+
+	protected ICollection<EmployeeDto> _employees = default!;
+	protected ICollection<DisciplineSemesterDto> _disciplineSemesters = default!;
+	protected ICollection<StudentGroupDto> _studentGroups = default!;
+	protected ICollection<FixedDisciplineStatusDto> _fixedDisciplineStatuses = default!;
+	protected ICollection<DisciplineDto> _disciplines = default!;
+
+	protected override void OnInitialized() =>
+		Context = new(
+			entityName: L["Согласование дисциплин"],
+			entityNamePlural: L["Управление заявками о читаемых дисциплинах"],
+			entityResource: EduResource.FixedDisciplines,
+			fields: new()
+				{
+					new(fixedDiscipline => GetEmoloyeeFio(fixedDiscipline.FixingEmployeeId), L["Преподаватель"], "Id"),
+					new(fixedDiscipline => GetDisciplineSemesterInfo(fixedDiscipline.DisciplineSemesterId), L["Дисциплина"], "Id"),
+					new(fixedDiscipline => GetStudentGroupInfo(fixedDiscipline.StudentGroupId), L["Студ. группа"], "Id"),
+					new(fixedDiscipline => GetStatusInfo(fixedDiscipline.FixedDisciplineStatusId), L["Статус"], "Статус"),
+				},
+			idFunc: fixedDiscipline => fixedDiscipline.Id,
+			searchFunc: async filter =>
+			{
+				var fixedDisciplines = (await FixedDisciplinesClient
+					.SearchAsync(filter.Adapt<SearchFixedDisciplinesRequest>()))
+					.Adapt<PaginationResponse<FixedDisciplineDto>>();
+
+				_employees = await EmployeesClient.GetAllByIdRangeAsync(fixedDisciplines.Data.Select(x => x.FixingEmployeeId).Distinct());
+				_disciplineSemesters = await DisciplineSemestersClient.GetAllByIdRangeAsync(fixedDisciplines.Data.Select(x => x.DisciplineSemesterId).Distinct());
+				_studentGroups = await StudentGroupsClient.GetAllByIdRangeAsync(fixedDisciplines.Data.Select(x => x.StudentGroupId).Distinct());
+				_fixedDisciplineStatuses = await FixedDisciplineStatusesClient.GetAllByIdRangeAsync(fixedDisciplines.Data.Select(x => x.FixedDisciplineStatusId).Distinct());
+				_disciplines = await DisciplinesClient.GetAllByIdRangeAsync(_disciplineSemesters.Select(x => x.DisciplineId).Distinct());
+
+				return fixedDisciplines;
+			},
+			createFunc: async fixedDiscipline => await CreateFixedDiscipline(fixedDiscipline.Adapt<AddEditFixedDisciplineCommand>()),
+			hasExtraActionsFunc: () => true,
+			updateAction: String.Empty,
+			deleteAction: String.Empty,
+			exportAction: String.Empty);
+
+	private async Task CreateFixedDiscipline(AddEditFixedDisciplineCommand command)
+	{
+		command.FixedDisciplineStatusId = 3;
+		await FixedDisciplinesClient.CreateAsync(command);
+	}
+
+	private string GetEmoloyeeFio(int id)
+	{
+		var result = _employees.FirstOrDefault(x => x.Id == id);
+		if (result is null)
+			return string.Empty;
+		return $"{result.Lastname} {result.Firstname} {result.Middlename}";
+	}
+
+	private string GetDisciplineSemesterInfo(int id)
+	{
+		var result = _disciplineSemesters.FirstOrDefault(x => x.Id == id);
+		var discipline = _disciplines.FirstOrDefault(x => x.Id == result!.DisciplineId);
+		if (result is null)
+			return string.Empty;
+		return $" {result.SemesterNumber} {discipline!.DisciplineIndex} ({GetHoursSum(result)} ч.) {discipline.Name}";
+	}
+
+	private string GetStudentGroupInfo(int id)
+	{
+		var result = _studentGroups.FirstOrDefault(x => x.Id == id);
+		if (result is null)
+			return string.Empty;
+		return $"{result.Name}";
+	}
+
+	private string GetStatusInfo(int id)
+	{
+		var result = _fixedDisciplineStatuses.FirstOrDefault(x => x.Id == id);
+		if (result is null)
+			return string.Empty;
+		return $"{result.Name}";
+	}
+
+	private int GetHoursSum(DisciplineSemesterDto disciplineSemester)
+	{
+		return disciplineSemester.TheoryLessonHours +
+						disciplineSemester.PracticeWorkHours +
+						disciplineSemester.LaboratoryWorkHours +
+						disciplineSemester.ControlWorkHours +
+						disciplineSemester.IndependentWorkHours +
+						disciplineSemester.ConsultationHours +
+						disciplineSemester.ExamHours +
+						disciplineSemester.EducationalPracticeHours +
+						disciplineSemester.ProductionPracticeHours;
+	}
+}

@@ -1,0 +1,7 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <RootNamespace>Edu.WebApi.Shared</RootNamespace>
+        <AssemblyName>Edu.WebApi.Shared</AssemblyName>
+    </PropertyGroup>
+</Project>

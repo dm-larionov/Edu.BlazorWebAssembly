@@ -1,0 +1,44 @@
+﻿@page "/education/received-education-forms"
+@attribute [MustHavePermission(EduAction.View, EduResource.ReceivedEducationForms)]
+
+@inject IStringLocalizer<ReceivedEducationForms> L
+@inject IReceivedEducationFormsClient ReceivedEducationFormsClient
+
+<EduTitle Title="@L["ReceivedEducationForms"]" Description="@L["Manage ReceivedEducationForms."]" />
+
+<EntityTable TEntity="ReceivedEducationFormDto" TId="int" TRequest="AddEditReceivedEducationFormCommand" Context="@Context">
+
+    <EditFormContent>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.EducationFormId)" @bind-Value="context.EducationFormId" Label="@L["Id"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" For="@(() => context.AdditionalInfo)" @bind-Value="context.AdditionalInfo" Label="@L["Id"]" />
+        </MudItem>
+    </EditFormContent>
+
+</EntityTable>
+
+@code
+{
+    protected EntityServerTableContext<ReceivedEducationFormDto, int, AddEditReceivedEducationFormCommand> Context { get; set; } = default!;
+
+    protected override void OnInitialized() =>
+        Context = new(
+            entityName: L["ReceivedEducationForm"],
+            entityNamePlural: L["ReceivedEducationForms"],
+            entityResource: EduResource.ReceivedEducationForms,
+            fields: new()
+            {
+                new(receivedEducationForm => receivedEducationForm.EducationFormId, L["Id"], "Id"),
+                new(receivedEducationForm => receivedEducationForm.AdditionalInfo, L["Id"], "Id"),
+            },
+            idFunc: receivedEducationForm => receivedEducationForm.Id,
+            searchFunc: async filter => (await ReceivedEducationFormsClient
+                .SearchAsync(filter.Adapt<SearchReceivedEducationFormsRequest>()))
+                .Adapt<PaginationResponse<ReceivedEducationFormDto>>(),
+            createFunc: async receivedEducationForm => await ReceivedEducationFormsClient.CreateAsync(receivedEducationForm.Adapt<AddEditReceivedEducationFormCommand>()),
+            updateFunc: async (id, receivedEducationForm) => await ReceivedEducationFormsClient.UpdateAsync(id, receivedEducationForm),
+            deleteFunc: async id => await ReceivedEducationFormsClient.DeleteAsync(id),
+            exportAction:String.Empty);
+}

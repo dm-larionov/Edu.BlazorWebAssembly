@@ -1,0 +1,40 @@
+﻿@page "/education/education-modules"
+@attribute [MustHavePermission(EduAction.View, EduResource.EducationModules)]
+
+@inject IStringLocalizer<EducationModules> L
+@inject IEducationModulesClient EducationModulesClient
+
+<EduTitle Title="@L["EducationModules"]" Description="@L["Manage EducationModules."]" />
+
+<EntityTable TEntity="EducationModuleDto" TId="int" TRequest="AddEditEducationModuleCommand" Context="@Context">
+
+    <EditFormContent>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" For="@(() => context.Name)" @bind-Value="context.Name" Label="@L["Name"]" />
+        </MudItem>
+    </EditFormContent>
+
+</EntityTable>
+
+@code
+{
+    protected EntityServerTableContext<EducationModuleDto, int, AddEditEducationModuleCommand> Context { get; set; } = default!;
+
+    protected override void OnInitialized() =>
+        Context = new(
+            entityName: L["EducationModule"],
+            entityNamePlural: L["EducationModules"],
+            entityResource: EduResource.EducationModules,
+            fields: new()
+            {
+                new(educationModule => educationModule.Name, L["Name"]),
+            },
+            idFunc: educationModule => educationModule.Id,
+            searchFunc: async filter => (await EducationModulesClient
+                .SearchAsync(filter.Adapt<SearchEducationModulesRequest>()))
+                .Adapt<PaginationResponse<EducationModuleDto>>(),
+            createFunc: async educationModule => await EducationModulesClient.CreateAsync(educationModule.Adapt<AddEditEducationModuleCommand>()),
+            updateFunc: async (id, educationModule) => await EducationModulesClient.UpdateAsync(id, educationModule),
+            deleteFunc: async id => await EducationModulesClient.DeleteAsync(id),
+            exportAction:String.Empty);
+}

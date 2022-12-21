@@ -1,0 +1,91 @@
+﻿@page "/education/discipline-semesters"
+@attribute [MustHavePermission(EduAction.View, EduResource.DisciplineSemesters)]
+
+@inject IStringLocalizer<DisciplineSemesters> L
+@inject IDisciplineSemestersClient DisciplineSemestersClient
+
+@using Edu.BlazorWebAssembly.Client.Pages.Education.Autocomplete;
+
+<EduTitle Title="@L["DisciplineSemesters"]" Description="@L["Manage DisciplineSemesters."]" />
+
+<EntityTable TEntity="DisciplineSemesterDto" TId="int" TRequest="AddEditDisciplineSemesterCommand" Context="@Context">
+
+    <EditFormContent>
+        <MudItem xs="12" md="6">
+            <DisciplineAutocomplete For="@(() => context.DisciplineId)" @bind-Value="context.DisciplineId" OffsetY="true" Label="@L["Дисциплина"]"/>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="byte" For="@(() => context.SemesterNumber)" @bind-Value="context.SemesterNumber" Label="@L["Семестр"]"/>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="byte?" For="@(() => context.WeeksCount)" @bind-Value="context.WeeksCount" Label="@L["Кол-во недель"]"/>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.TheoryLessonHours)" @bind-Value="context.TheoryLessonHours" Label="@L["Теор. ч."]"/>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.PracticeWorkHours)" @bind-Value="context.PracticeWorkHours" Label="@L["Практ. ч."]"/>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.LaboratoryWorkHours)" @bind-Value="context.LaboratoryWorkHours" Label="@L["Лаб. ч."]"/>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.ControlWorkHours)" @bind-Value="context.ControlWorkHours" Label="@L["Контр. ч."]"/>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.IndependentWorkHours)" @bind-Value="context.IndependentWorkHours" Label="@L["Индив. ч."]"/>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.ConsultationHours)" @bind-Value="context.ConsultationHours" Label="@L["Конс. ч."]"/>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.ExamHours)" @bind-Value="context.ExamHours" Label="@L["Экз. ч."]"/>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.EducationalPracticeHours)" @bind-Value="context.EducationalPracticeHours" Label="@L["Уч. пр. ч."]"/>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.ProductionPracticeHours)" @bind-Value="context.ProductionPracticeHours" Label="@L["Пр. пр. ч."]"/>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <EducationModuleAutocomplete T="int?" For="@(() => context.CertificationFormId)" @bind-Value="context.CertificationFormId" OffsetY="true" Label="@L["Аттестация"]"/>
+        </MudItem>
+    </EditFormContent>
+
+</EntityTable>
+
+@code
+{
+    protected EntityServerTableContext<DisciplineSemesterDto, int, AddEditDisciplineSemesterCommand> Context { get; set; } = default!;
+
+    protected override void OnInitialized() =>
+        Context = new(
+            entityName: L["DisciplineSemester"],
+            entityNamePlural: L["DisciplineSemesters"],
+            entityResource: EduResource.DisciplineSemesters,
+            fields: new()
+            {
+                new(disciplineSemester => disciplineSemester.DisciplineId, L["Дисц."], "Id"),
+                new(disciplineSemester => disciplineSemester.SemesterNumber, L["Сем."], "Id"),
+                new(disciplineSemester => disciplineSemester.WeeksCount, L["Нед."], "Id"),
+                new(disciplineSemester => disciplineSemester.TheoryLessonHours, L["Теор."], "Name"),
+                new(disciplineSemester => disciplineSemester.PracticeWorkHours, L["Прак."], "Name"),
+                new(disciplineSemester => disciplineSemester.LaboratoryWorkHours, L["Лаб."], "Name"),
+                new(disciplineSemester => disciplineSemester.ControlWorkHours, L["Контр."], "Name"),
+                new(disciplineSemester => disciplineSemester.IndependentWorkHours, L["Инд."], "Name"),
+                new(disciplineSemester => disciplineSemester.ConsultationHours, L["Конс."], "Name"),
+                new(disciplineSemester => disciplineSemester.ExamHours, L["Экз."], "Name"),
+                new(disciplineSemester => disciplineSemester.EducationalPracticeHours, L["Уч.пр."], "Name"),
+                new(disciplineSemester => disciplineSemester.ProductionPracticeHours, L["Пр.пр."], "Name"),
+                new(disciplineSemester => disciplineSemester.CertificationFormId, L["Атт."], "Name"),
+            },
+            idFunc: disciplineSemester => disciplineSemester.Id,
+			searchAction:String.Empty,
+            searchFunc: async filter => (await DisciplineSemestersClient
+                .SearchAsync(filter.Adapt<SearchDisciplineSemestersRequest>()))
+                .Adapt<PaginationResponse<DisciplineSemesterDto>>(),
+            createFunc: async disciplineSemester => await DisciplineSemestersClient.CreateAsync(disciplineSemester.Adapt<AddEditDisciplineSemesterCommand>()),
+            updateFunc: async (id, disciplineSemester) => await DisciplineSemestersClient.UpdateAsync(id, disciplineSemester),
+            deleteFunc: async id => await DisciplineSemestersClient.DeleteAsync(id),
+            exportAction:String.Empty);
+}

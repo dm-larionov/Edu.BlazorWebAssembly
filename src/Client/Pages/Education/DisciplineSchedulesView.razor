@@ -1,0 +1,237 @@
+﻿@page "/education/discipline-schedules-view"
+@using System.Globalization
+@attribute [MustHavePermission(EduAction.View, EduResource.DisciplineSchedules)]
+
+@inject IStringLocalizer<DisciplineSchedules> L
+@inject IDisciplineSchedulesClient DisciplineSchedulesClient
+@inject IFixedDisciplinesClient FixedDisciplinesClient
+@inject IEmployeesClient EmployeesClient
+@inject IDisciplineSemestersClient DisciplineSemestersClient
+@inject IStudentGroupsClient StudentGroupsClient
+@inject IDisciplinesClient DisciplinesClient
+@inject IAudiencesClient AudiencesClient
+
+
+<EduTitle Title="@L["Расписание занятий студенческих групп"]" Description="@L["Расписание занятий студенческих групп всего отделения."]" />
+
+<div class="d-flex flex-grow-1 gap-4">
+    <MudPaper Class="flex-none d-flex mud-theme-secondary" Width="32px" Elevation="0"/>
+    <MudPaper Class="flex-initial d-flex" Width="250px" Elevation="0">
+        <MudDatePicker Class="ma-2" Label="Отображаемая неделя" ShowWeekNumbers="true" Date="selectedDate" DateChanged="@OnDateChanged" />
+    </MudPaper>
+    <MudPaper Class="flex-initial d-flex" Width="250px" Elevation="0">
+        <MudSelect Class="ma-2" @bind-Value="cource" Label="Курс">
+            <MudSelectItem Value="1">1 Курс</MudSelectItem>
+            <MudSelectItem Value="2">2 Курс</MudSelectItem>
+            <MudSelectItem Value="3">3 Курс</MudSelectItem>
+            <MudSelectItem Value="4">4 Курс</MudSelectItem>
+        </MudSelect>
+    </MudPaper>
+</div>
+
+<MudStack Row="true" Class="d-flex flex-grow-0">
+	@if (_disciplineSchedules is null)
+	{
+	    <MudProgressCircular Color="Color.Primary" Class="ma-8" Indeterminate="true"/>
+	}
+	else
+	{
+		<MudItem Class="">
+			<MudItem Class="ma-2">
+				<MudPaper Elevation="2" Class="d-flex flex-row mud-theme-primary">
+					<MudText Typo="Typo.h5" Color="Color.Default" Class="mb-2 ma-2">Дата</MudText>
+				</MudPaper>
+			</MudItem>
+			@foreach (var day in weekDays)
+			{
+				<MudItem Class="ma-2">
+					<MudPaper Height="@($"{75 * pairs.Max(x => x)}px")" Class="" Style="padding-top:150px">
+						<MudText Typo="Typo.body1" Color="Color.Primary" Style="-webkit-transform: rotate(270deg);">
+							@day.ToShortDateString()
+						</MudText>
+					</MudPaper>
+				</MudItem>
+			}
+		</MudItem>
+
+		<MudItem Class="">
+			<MudItem Class="ma-2">
+				<MudPaper Elevation="2" Class="d-flex flex-row mud-theme-primary">
+					<MudText Typo="Typo.h5" Color="Color.Default" Class="mb-2 ma-2">№</MudText>
+				</MudPaper>
+			</MudItem>
+			@foreach (var day in weekDays)
+			{
+				<MudItem Class="ma-2">
+					<MudContainer Height="@($"{75 * pairs.Max(x => x)}px")">
+                        @foreach (var i in pairs)
+						{
+							<MudPaper Height="75px" Elevation="3">
+								<MudContainer Elevation="2" Class="d-flex flex-row">
+									<MudStack Spacing="2">
+										<MudText Typo="Typo.body1" Color="Color.Primary" Align="Align.Center">
+											@i
+										</MudText>
+									</MudStack>
+								</MudContainer>
+							</MudPaper>
+						}
+					</MudContainer>
+				</MudItem>
+			}
+		</MudItem>
+
+		@foreach (var studentGroup in _studentGroups.Where(x => x.CourseNumber == cource).ToArray())
+		{
+			<MudItem Class="">
+				<MudItem Class="ma-2">
+					<MudPaper Elevation="2" Class="d-flex flex-row mud-theme-primary">
+						<MudText Typo="Typo.h5" Color="Color.Default" Class="mb-2 ma-2">@studentGroup.Name</MudText>
+					</MudPaper>
+				</MudItem>
+				@foreach (var day in weekDays)
+				{
+					<MudItem Class="ma-2">
+						<MudPaper Height="@($"{75 * pairs.Max(x => x)}px")" Width="375px" Class="" Fixed="true">
+							@foreach (var dayDisciplines in _disciplineSchedules.Where(x => x.Date.ToShortDateString() == day.ToShortDateString() && _fixedDisciplines.Any(y => y.Id == x.FixedDisciplineId && y.StudentGroupId == studentGroup.Id)).OrderBy(x => x.Date).GroupBy(x => x.Date.Date))
+							{
+								@foreach (var i in pairs)
+								{
+									<MudPaper Height="75px" Elevation="2">
+										@foreach (var pairNumber in dayDisciplines.Where(x => x.PairNumber == i).GroupBy(x => x.PairNumber))
+										{
+											<MudContainer Elevation="5" Class="d-flex flex-row">
+												<MudStack Spacing="2">
+													@foreach (var discipline in pairNumber.OrderBy(x => x.IsEvenPair))
+													{
+														@if (discipline.Id != 0)
+														{
+															<MudText Typo="Typo.body1" Color="Color.Primary">
+																@GetDisciplineInfo(discipline.FixedDisciplineId)<br />
+																@GetEmployeeInfo(discipline.FixedDisciplineId) -
+																@GetAudienceNumber(discipline.AudienceId ?? 0)
+															</MudText>
+														}
+													}
+												</MudStack>
+											</MudContainer>
+										}
+									</MudPaper>
+								}
+							}
+						</MudPaper>
+					</MudItem>
+				}
+			</MudItem>
+		}
+	}
+
+</MudStack>
+
+@code
+{
+	DateTime selectedDate = DateTime.Now;
+	int cource = 4;
+	int[] pairs = new[] { 1, 2, 3, 4, 5 };
+	List<DateTime> weekDays = new List<DateTime>();
+	int urod = 0;
+	private List<DisciplineScheduleDto> _disciplineSchedules;
+	private List<StudentGroupDto> _studentGroups = new List<StudentGroupDto>();
+
+	protected ICollection<AudienceDto> _audiences = default!;
+	protected ICollection<EmployeeDto> _employees = default!;
+	protected ICollection<DisciplineSemesterDto> _disciplineSemesters = default!;
+	protected ICollection<FixedDisciplineDto> _fixedDisciplines = default!;
+	protected ICollection<DisciplineDto> _disciplines = default!;
+
+	private async Task OnDateChanged(DateTime? date)
+	{
+		if (!date.HasValue)
+			return;
+
+		DateTimeFormatInfo dfi = DateTimeFormatInfo.CurrentInfo;
+		Calendar cal = dfi.Calendar;
+
+		var isSameWeek = cal.GetWeekOfYear(date.Value, dfi.CalendarWeekRule, dfi.FirstDayOfWeek) == cal.GetWeekOfYear(selectedDate, dfi.CalendarWeekRule, dfi.FirstDayOfWeek);
+
+		selectedDate = date.Value;
+
+		if (!isSameWeek)
+			await GetSchedule(selectedDate);
+	}
+
+	protected override async Task OnInitializedAsync()
+	{
+		_studentGroups = (await StudentGroupsClient.GetAllExistingAsync(DateTime.Now)).Adapt<List<StudentGroupDto>>();
+		await GetSchedule(DateTime.Now);
+	}
+
+	private async Task GetSchedule(DateTime date)
+	{
+	    _disciplineSchedules = null;
+		weekDays.Clear();
+		var disciplineSchedules = new List<DisciplineScheduleDto>();
+		foreach (var studentGroup in _studentGroups)
+		{
+			disciplineSchedules.AddRange((await DisciplineSchedulesClient.GetByStudentGroupAsync(studentGroup.Id, date)).ToList());
+		}
+		_audiences = await AudiencesClient.GetAllByIdRangeAsync(disciplineSchedules.Where(x => x.AudienceId is not null).Select(x => (int)x.AudienceId).Distinct());
+
+		_fixedDisciplines = await FixedDisciplinesClient.GetAllByIdRangeAsync(disciplineSchedules.Select(x => x.FixedDisciplineId).Distinct());
+		_employees = await EmployeesClient.GetAllByIdRangeAsync(_fixedDisciplines.Select(x => x.FixingEmployeeId).Distinct());
+		_disciplineSemesters = await DisciplineSemestersClient.GetAllByIdRangeAsync(_fixedDisciplines.Select(x => x.DisciplineSemesterId).Distinct());
+		_disciplines = await DisciplinesClient.GetAllByIdRangeAsync(_disciplineSemesters.Select(x => x.DisciplineId).Distinct());
+
+		urod = (await DisciplineSchedulesClient.SearchAsync(new() { FixedDisciplineId = 1, PageSize = 1, PageNumber = 1 })).TotalCount;
+
+		int offset = date.DayOfWeek - DayOfWeek.Monday;
+		var monday = date.AddDays(-offset);
+		if (date.DayOfWeek == DayOfWeek.Sunday)
+			monday = monday.AddDays(-7);
+		var sunday = monday.AddDays(6);
+
+		for (int i = 0; i < 5; i++)
+			weekDays.Add(monday.AddDays(i));
+
+		_disciplineSchedules = disciplineSchedules;
+	}
+
+
+	private string GetEmployeeInfo(int fixedDisciplineId)
+	{
+		var fixedDiscipline = _fixedDisciplines.First(x => x.Id == fixedDisciplineId);
+		var employee = _employees.First(x => x.Id == fixedDiscipline.FixingEmployeeId);
+
+		return $"{employee.Lastname} {employee.Firstname.First()}. {employee.Middlename.First()}.";
+	}
+
+	private string GetDisciplineInfo(int fixedDisciplineId)
+	{
+		var fixedDiscipline = _fixedDisciplines.First(x => x.Id == fixedDisciplineId);
+		var disciplineSemester = _disciplineSemesters.First(x => x.Id == fixedDiscipline.DisciplineSemesterId);
+		var discipline = _disciplines.First(x => x.Id == disciplineSemester.DisciplineId);
+
+		return $"{discipline.Name}";
+	}
+
+	private string GetAudienceNumber(int audienceId)
+	{
+		var result = _audiences.FirstOrDefault(x => x.Id == audienceId);
+		if (result is null)
+			return string.Empty;
+		return $"{result.Number}";
+	}
+
+	private int GetHoursSum(DisciplineSemesterDto disciplineSemester)
+	{
+		return disciplineSemester.TheoryLessonHours +
+						disciplineSemester.PracticeWorkHours +
+						disciplineSemester.LaboratoryWorkHours +
+						disciplineSemester.ControlWorkHours +
+						disciplineSemester.IndependentWorkHours +
+						disciplineSemester.ConsultationHours +
+						disciplineSemester.ExamHours +
+						disciplineSemester.EducationalPracticeHours +
+						disciplineSemester.ProductionPracticeHours;
+	}
+}

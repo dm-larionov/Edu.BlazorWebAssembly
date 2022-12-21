@@ -1,0 +1,28 @@
+<MudDrawer Anchor="Anchor.Right" @bind-Open="HotKeyDrawerOpen" Elevation="25" Variant="@DrawerVariant.Temporary"
+    Width="450px" Height="100vh">
+    <MudDrawerHeader Class="align-center">
+        <MudText Typo="Typo.h6">
+			Горячие клавиши
+        </MudText>
+        <MudSpacer />
+        <MudIconButton Color="Color.Default" Icon="@Icons.Material.Filled.Close"
+            OnClick="@(() => HotKeyDrawerOpenChanged.InvokeAsync(false))" Size="Size.Small" />
+    </MudDrawerHeader>
+    <MudDivider Style="margin-bottom:10px!important" />
+    <div style="padding:20px!important">
+        <MudExpansionPanels DisableBorders="true" Elevation="25">
+            <MudStack>
+                <MudPaper Class="pa-3">T - Переключение цветовой темы</MudPaper>
+                <MudPaper Class="pa-3">R - Отзеркалить навигационную панель</MudPaper>
+                <MudPaper Class="pa-3">P - Показать/скрыть навигационную панель</MudPaper>
+                <MudPaper Class="pa-3">L - Отобразить</MudPaper>
+                <MudPaper Class="pa-3">HOME - Переход на главную страницу</MudPaper>
+                <MudPaper Class="pa-3">K - Показать/скрыть горячие клавиши</MudPaper>
+                <MudPaper Class="pa-3">H - Показать/скрыть руководство пользователя</MudPaper>
+                <MudPaper Class="pa-3">ESC - Выйти из модального окна</MudPaper>
+            </MudStack>
+        </MudExpansionPanels>
+    </div>
+</MudDrawer>
+<MudOverlay DarkBackground="false" OnClick="@(() => HotKeyDrawerOpenChanged.InvokeAsync(false))"
+    Visible="HotKeyDrawerOpen" VisibleChanged="HotKeyDrawerOpenChanged" />

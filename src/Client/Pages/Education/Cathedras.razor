@@ -1,0 +1,48 @@
+﻿@page "/education/cathedras"
+@attribute [MustHavePermission(EduAction.View, EduResource.Cathedras)]
+
+@inject IStringLocalizer<Cathedras> L
+@inject ICathedrasClient CathedrasClient
+
+<EduTitle Title="@L["Кафедры"]" Description="@L["Управление данными о кафедрах."]" />
+
+<EntityTable TEntity="CathedraDto" TId="int" TRequest="AddEditCathedraCommand" Context="@Context">
+
+    <EditFormContent>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" For="@(() => context.Name)" @bind-Value="context.Name" Label="@L["Наименование"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" For="@(() => context.NameAbbreviation)" @bind-Value="context.NameAbbreviation" Label="@L["Аббревиатура"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" For="@(() => context.Description)" @bind-Value="context.Description" Label="@L["Описание"]" />
+        </MudItem>
+    </EditFormContent>
+
+</EntityTable>
+
+@code
+{
+    protected EntityServerTableContext<CathedraDto, int, AddEditCathedraCommand> Context { get; set; } = default!;
+
+    protected override void OnInitialized() =>
+        Context = new(
+            entityName: L["Кафедра"],
+            entityNamePlural: L["Кафедры"],
+            entityResource: EduResource.Cathedras,
+            fields: new()
+            {
+                new(cathedra => cathedra.Name, L["Наименование"], "Наименование"),
+                new(cathedra => cathedra.NameAbbreviation, L["Аббревиатура"], "Аббревиатура"),
+                new(cathedra => cathedra.Description, L["Описание"], "Описание"),
+            },
+            idFunc: cathedra => cathedra.Id,
+            searchFunc: async filter => (await CathedrasClient
+                .SearchAsync(filter.Adapt<SearchCathedrasRequest>()))
+                .Adapt<PaginationResponse<CathedraDto>>(),
+            createFunc: async cathedra => await CathedrasClient.CreateAsync(cathedra.Adapt<AddEditCathedraCommand>()),
+            updateFunc: async (id, cathedra) => await CathedrasClient.UpdateAsync(id, cathedra),
+            deleteFunc: async id => await CathedrasClient.DeleteAsync(id),
+            exportAction:String.Empty);
+}

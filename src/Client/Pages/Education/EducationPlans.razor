@@ -1,0 +1,112 @@
+﻿@page "/education/education-plans"
+@attribute [MustHavePermission(EduAction.View, EduResource.EducationPlans)]
+@attribute [MustHavePermission(EduAction.View, EduResource.FsesCategoryPartitions)]
+
+@inject IJSRuntime JS;
+@inject NavigationManager _navigationManager;
+@inject IStringLocalizer<EducationPlans> L
+@inject IEducationPlansClient EducationPlansClient
+@inject IStudentGroupsClient StudentGroupsClient
+@inject IFsesCategoryPartitionsClient FsesCategoryPartitionsClient
+
+@using Edu.BlazorWebAssembly.Client.Pages.Education.Autocomplete;
+
+<EduTitle Title="@L["EducationPlans"]" Description="@L["Manage EducationPlans."]" />
+
+<EntityTable TEntity="EducationPlanDto" TId="int" TRequest="AddEditEducationPlanCommand" Context="@Context">
+	<ExtraActions>
+		<MudMenuItem @onclick="@(() => ViewDisciplineSemesters(context.Id))">@L["Просмотр"]</MudMenuItem>
+		<MudMenuItem @onclick="@(() => ViewEducationPlanChains(context.Id))">@L["Прикрепления"]</MudMenuItem>
+		<MudMenuItem Style="color:green!important" @onclick="@(() => ExportEducationPlan(context.Id))">@L["Импорт"]</MudMenuItem>
+	</ExtraActions>
+	<EditFormContent>
+		<MudItem xs="12" md="6">
+			<MudTextField T="string" For="@(() => context.Name)" @bind-Value="context.Name" Label="@L["Наименование"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<FsesCategoryPartitionAutocomplete For="@(() => context.FsesCategoryPartitionId)" @bind-Value="context.FsesCategoryPartitionId" OffsetY="true" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<MudTextField T="int" For="@(() => context.BeginingYear)" @bind-Value="context.BeginingYear" Label="@L["Год начала"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<MudTextField T="int" For="@(() => context.EndingYear)" @bind-Value="context.EndingYear" Label="@L["Год окончания"]" />
+		</MudItem>
+	</EditFormContent>
+
+</EntityTable>
+
+@code
+{
+	protected EntityServerTableContext<EducationPlanDto, int, AddEditEducationPlanCommand> Context { get; set; } = default!;
+	protected ICollection<FsesCategoryPartitionDto> _fsesCategoryPartitions = default!;
+
+	protected override void OnInitialized() =>
+		Context = new(
+			entityName: L["EducationPlan"],
+			entityNamePlural: L["EducationPlans"],
+			entityResource: EduResource.EducationPlans,
+			fields: new()
+				{
+					new(educationPlan => educationPlan.Name, L["Наименование"]),
+					new(educationPlan => educationPlan.BeginingYear, L["Год начала"]),
+					new(educationPlan => educationPlan.EndingYear, L["Год окончания"]),
+					new(educationPlan => GetFsesName(educationPlan.FsesCategoryPartitionId), L["Специальность"]),
+				},
+			idFunc: educationPlan => educationPlan.Id,
+			enableAdvancedSearch: false,
+			searchAction: String.Empty,
+			searchFunc: async filter =>
+			{
+				var educationPlans = (await EducationPlansClient
+					.SearchAsync(filter.Adapt<SearchEducationPlansRequest>()))
+						.Adapt<PaginationResponse<EducationPlanDto>>();
+				_fsesCategoryPartitions = await FsesCategoryPartitionsClient.GetAllByIdRangeAsync(educationPlans.Data.Select(x => x.FsesCategoryPartitionId).Distinct());
+				return educationPlans;
+			},
+			createFunc: async educationPlan => await EducationPlansClient.CreateAsync(educationPlan.Adapt<AddEditEducationPlanCommand>()),
+			updateFunc: async (id, educationPlan) => await EducationPlansClient.UpdateAsync(id, educationPlan),
+			deleteFunc: async id => await EducationPlansClient.DeleteAsync(id),
+			exportAction: String.Empty);
+
+
+	private string GetFsesName(int id)
+	{
+		var result = _fsesCategoryPartitions.FirstOrDefault(x => x.Id == id);
+		if (result is null)
+			return string.Empty;
+		return $"{result.FirstPartNumber}.{result.SecondPartNumber}.{result.ThirdPathNumber} - {result.Name}";
+	}
+
+	private void ViewDisciplineSemesters(int educationPlanId)
+	{
+		_navigationManager.NavigateTo($"education/education-plan/{educationPlanId}/discipline-semesters/");
+	}
+
+    private async Task ViewEducationPlanChains(int educationPlanId)
+    {
+        var filter = new SearchStudentGroupsRequest
+        {
+            EducationPlanId = educationPlanId
+        };
+
+        List<StudentGroupDto> studentGroup;
+        if (await ApiHelper.ExecuteCallGuardedAsync(
+            () => StudentGroupsClient.SearchAsync(filter), Snackbar)
+            is { } response)
+        {
+            studentGroup = response.Data.ToList();
+        }
+    }
+
+    private async Task ExportEducationPlan(int educationPlanId)
+	{
+		if (await ApiHelper.ExecuteCallGuardedAsync(
+			() => EducationPlansClient.ExportAsync(educationPlanId), Snackbar)
+			is { } result)
+		{
+			using var streamRef = new DotNetStreamReference(result.Stream);
+			await JS.InvokeVoidAsync("downloadFileFromStream", $"{Context.EntityNamePlural}.xlsx", streamRef);
+		}
+	}
+}

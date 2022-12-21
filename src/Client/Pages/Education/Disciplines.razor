@@ -1,0 +1,101 @@
+﻿@page "/education/disciplines"
+@attribute [MustHavePermission(EduAction.View, EduResource.Disciplines)]
+
+@inject IStringLocalizer<Disciplines> L
+@inject IDisciplinesClient DisciplinesClient
+@inject ICathedrasClient CathedrasClient
+@inject IEducationCyclesClient EducationCyclesClient
+@inject IEducationModulesClient EducationModulesClient
+
+@using Edu.BlazorWebAssembly.Client.Pages.Education.Autocomplete;
+
+<EduTitle Title="@L["Дисциплины"]" Description="@L["Управление дисциплинами."]" />
+
+<EntityTable TEntity="DisciplineDto" TId="int" TRequest="AddEditDisciplineCommand" Context="@Context">
+
+	<EditFormContent>
+		<MudItem xs="12" md="6">
+			<MudTextField T="string" For="@(() => context.DisciplineIndex)" @bind-Value="context.DisciplineIndex" Label="@L["Индекс"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<MudTextField T="string" For="@(() => context.Name)" @bind-Value="context.Name" Label="@L["Дисциплина"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<CathedraAutocomplete T="int?" For="@(() => context.CathedraId)" @bind-Value="context.CathedraId" OffsetY="true" Label="@L["Кафедра"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<EducationCycleAutocomplete For="@(() => context.EducationCycleId)" @bind-Value="context.EducationCycleId" OffsetY="true" Label="@L["Обр. цикл"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<EducationModuleAutocomplete T="int?" For="@(() => context.EducationModuleId)" @bind-Value="context.EducationModuleId" OffsetY="true" Label="@L["Обр. модуль"]" />
+		</MudItem>
+	</EditFormContent>
+
+</EntityTable>
+
+@code
+{
+	protected EntityServerTableContext<DisciplineDto, int, AddEditDisciplineCommand> Context { get; set; } = default!;
+	protected ICollection<CathedraDto> _cathedras = default!;
+	protected ICollection<EducationCycleDto> _educationCycles = default!;
+    protected ICollection<EducationModuleDto> _educationModules = default!;
+
+	protected override void OnInitialized() =>
+		Context = new(
+			entityName: L["Дисциплина"],
+			entityNamePlural: L["Дисциплины"],
+			entityResource: EduResource.Disciplines,
+			fields: new()
+				{
+					new(discipline => discipline.DisciplineIndex, L["Индекс"], "Индекс"),
+					new(discipline => discipline.Name, L["Дисциплина"], "Дисциплина"),
+					new(discipline => GetCathedraName(discipline.CathedraId), L["Кафедра"], "Кафедра"),
+					new(discipline => GetEducationCycleName(discipline.EducationCycleId), L["Обр. цикл"], "Обр. цикл"),
+					new(discipline => GetEducationModuleName(discipline.EducationModuleId), L["Обр. модуль"], "Обр. модуль"),
+				},
+			idFunc: discipline => discipline.Id,
+			searchFunc: async filter =>
+			{
+
+				var disciplines = (await DisciplinesClient
+				    .SearchAsync(filter.Adapt<SearchDisciplinesRequest>()))
+				    .Adapt<PaginationResponse<DisciplineDto>>();
+				_cathedras = await CathedrasClient.GetAllByIdRangeAsync(disciplines.Data.Where(x => x.CathedraId is not null).Select(x => (int)x.CathedraId).Distinct());
+				_educationCycles = await EducationCyclesClient.GetAllByIdRangeAsync(disciplines.Data.Select(x => x.EducationCycleId).Distinct());
+				_educationModules = await EducationModulesClient.GetAllByIdRangeAsync(disciplines.Data.Where(x => x.EducationModuleId is not null).Select(x => (int)x.EducationModuleId).Distinct());
+				return disciplines;
+			},
+			createFunc: async discipline => await DisciplinesClient.CreateAsync(discipline.Adapt<AddEditDisciplineCommand>()),
+			updateFunc: async (id, discipline) => await DisciplinesClient.UpdateAsync(id, discipline),
+			deleteFunc: async id => await DisciplinesClient.DeleteAsync(id),
+			exportAction: String.Empty);
+
+    private string GetEducationCycleName(int id)
+    {
+        var result = _educationCycles.FirstOrDefault(x => x.Id == id);
+        if (result is null)
+            return string.Empty;
+        return $"{result.Name}";
+    }
+
+    private string GetCathedraName(int? id)
+    {
+        if (id is null)
+            return string.Empty;
+        var result = _cathedras.FirstOrDefault(x => x.Id == id);
+        if (result is null)
+            return string.Empty;
+        return $"{result.Name}";
+    }
+
+    private string GetEducationModuleName(int? id)
+    {
+        if (id is null)
+            return string.Empty;
+        var result = _educationModules.FirstOrDefault(x => x.Id == id);
+        if (result is null)
+            return string.Empty;
+        return $"{result.Name}";
+    }
+
+}

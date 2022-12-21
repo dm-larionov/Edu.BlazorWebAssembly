@@ -1,0 +1,53 @@
+﻿@page "/education/employees"
+@attribute [MustHavePermission(EduAction.View, EduResource.Employees)]
+
+@inject IStringLocalizer<Employees> L
+@inject IEmployeesClient EmployeesClient
+
+<EduTitle Title="@L["Employees"]" Description="@L["Manage Employees."]" />
+
+<EntityTable TEntity="EmployeeDto" TId="int" TRequest="AddEditEmployeeCommand" Context="@Context">
+
+    <EditFormContent>
+
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" For="@(() => context.Firstname)" @bind-Value="context.Firstname" Label="@L["Id"]"/>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" For="@(() => context.Lastname)" @bind-Value="context.Lastname" Label="@L["Id"]"/>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" For="@(() => context.Middlename)" @bind-Value="context.Middlename" Label="@L["Id"]"/>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.PostId)" @bind-Value="context.PostId" Label="@L["Name"]"/>
+        </MudItem>
+    </EditFormContent>
+
+</EntityTable>
+
+@code
+{
+    protected EntityServerTableContext<EmployeeDto, int, AddEditEmployeeCommand> Context { get; set; } = default!;
+
+    protected override void OnInitialized() =>
+        Context = new(
+            entityName: L["Employee"],
+            entityNamePlural: L["Employees"],
+            entityResource: EduResource.Employees,
+            fields: new()
+            {
+                new(employee => employee.Firstname, L["Id"], "Id"),
+                new(employee => employee.Lastname, L["Id"], "Id"),
+                new(employee => employee.Middlename, L["Id"], "Id"),
+                new(employee => employee.PostId, L["Name"], "Name"),
+            },
+            idFunc: employee => employee.Id,
+            searchFunc: async filter => (await EmployeesClient
+                .SearchAsync(filter.Adapt<SearchEmployeesRequest>()))
+                .Adapt<PaginationResponse<EmployeeDto>>(),
+            createFunc: async employee => await EmployeesClient.CreateAsync(employee.Adapt<AddEditEmployeeCommand>()),
+            updateFunc: async (id, employee) => await EmployeesClient.UpdateAsync(id, employee),
+            deleteFunc: async id => await EmployeesClient.DeleteAsync(id),
+            exportAction:String.Empty);
+}

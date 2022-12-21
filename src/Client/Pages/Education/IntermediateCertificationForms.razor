@@ -1,0 +1,40 @@
+﻿@page "/education/intermediate-certification-forms"
+@attribute [MustHavePermission(EduAction.View, EduResource.IntermediateCertificationForms)]
+
+@inject IStringLocalizer<IntermediateCertificationForms> L
+@inject IIntermediateCertificationFormsClient IntermediateCertificationFormsClient
+
+<EduTitle Title="@L["IntermediateCertificationForms"]" Description="@L["Manage IntermediateCertificationForms."]" />
+
+<EntityTable TEntity="IntermediateCertificationFormDto" TId="int" TRequest="AddEditIntermediateCertificationFormCommand" Context="@Context">
+
+    <EditFormContent>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" For="@(() => context.Name)" @bind-Value="context.Name" Label="@L["Name"]" />
+        </MudItem>
+    </EditFormContent>
+
+</EntityTable>
+
+@code
+{
+    protected EntityServerTableContext<IntermediateCertificationFormDto, int, AddEditIntermediateCertificationFormCommand> Context { get; set; } = default!;
+
+    protected override void OnInitialized() =>
+        Context = new(
+            entityName: L["IntermediateCertificationForm"],
+            entityNamePlural: L["IntermediateCertificationForms"],
+            entityResource: EduResource.IntermediateCertificationForms,
+            fields: new()
+            {
+                new(intermediateCertificationForm => intermediateCertificationForm.Name, L["Name"]),
+            },
+            idFunc: intermediateCertificationForm => intermediateCertificationForm.Id,
+            searchFunc: async filter => (await IntermediateCertificationFormsClient
+                .SearchAsync(filter.Adapt<SearchIntermediateCertificationFormsRequest>()))
+                .Adapt<PaginationResponse<IntermediateCertificationFormDto>>(),
+            createFunc: async intermediateCertificationForm => await IntermediateCertificationFormsClient.CreateAsync(intermediateCertificationForm.Adapt<AddEditIntermediateCertificationFormCommand>()),
+            updateFunc: async (id, intermediateCertificationForm) => await IntermediateCertificationFormsClient.UpdateAsync(id, intermediateCertificationForm),
+            deleteFunc: async id => await IntermediateCertificationFormsClient.DeleteAsync(id),
+            exportAction:String.Empty);
+}

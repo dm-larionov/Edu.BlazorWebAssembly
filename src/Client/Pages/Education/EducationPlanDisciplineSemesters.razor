@@ -1,0 +1,173 @@
+﻿@page "/education/education-plan/{EducationPlanId:int}/discipline-semesters"
+@attribute [MustHavePermission(EduAction.View, EduResource.DisciplineSemesters)]
+
+@inject IStringLocalizer<DisciplineSemesters> L
+@inject IEducationPlansClient EducationPlansClient
+@inject IDisciplineSemestersClient DisciplineSemestersClient
+@inject IDisciplinesClient DisciplinesClient
+@inject IIntermediateCertificationFormsClient IntermediateCertificationFormsClient
+@inject NavigationManager navigationManager
+@using Edu.BlazorWebAssembly.Client.Pages.Education.Autocomplete;
+
+<MudButton DisableElevation Variant="Variant.Filled" Color="Color.Secondary"
+           OnClick="GetBack" StartIcon="@Icons.Material.Filled.ArrowBack"
+           IconColor="Color.Surface">@L["Назад"]</MudButton>
+<br>
+<br>
+
+<EduTitle Title="@title" Description="@L["Manage DisciplineSemesters."]" />
+
+<EntityTable TEntity="DisciplineSemesterDto" TId="int" TRequest="AddEditDisciplineSemesterCommand" Context="@Context">
+    <EditFormContent>
+		<MudItem xs="12" md="6">
+			<DisciplineAutocomplete For="@(() => context.DisciplineId)" @bind-Value="context.DisciplineId" OffsetY="true" Label="Дисциплина" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<MudTextField T="byte" For="@(() => context.SemesterNumber)" @bind-Value="context.SemesterNumber" Label="@L["Семестр (По счету)"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<MudTextField T="byte?" For="@(() => context.WeeksCount)" @bind-Value="context.WeeksCount" Label="@L["Кол-во недель"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<MudTextField T="int" For="@(() => context.TheoryLessonHours)" @bind-Value="context.TheoryLessonHours" Label="@L["Теория (Часов)"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<MudTextField T="int" For="@(() => context.PracticeWorkHours)" @bind-Value="context.PracticeWorkHours" Label="@L["Практические (Часов)"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<MudTextField T="int" For="@(() => context.LaboratoryWorkHours)" @bind-Value="context.LaboratoryWorkHours" Label="@L["Лабораторные (Часов)"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<MudTextField T="int" For="@(() => context.ControlWorkHours)" @bind-Value="context.ControlWorkHours" Label="@L["Контрольные (Часов)"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<MudTextField T="int" For="@(() => context.IndependentWorkHours)" @bind-Value="context.IndependentWorkHours" Label="@L["Индивидуальные (Часов)"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<MudTextField T="int" For="@(() => context.ConsultationHours)" @bind-Value="context.ConsultationHours" Label="@L["Консультации (Часов)"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<MudTextField T="int" For="@(() => context.ExamHours)" @bind-Value="context.ExamHours" Label="@L["Экзамены (Часов)"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<MudTextField T="int" For="@(() => context.EducationalPracticeHours)" @bind-Value="context.EducationalPracticeHours" Label="@L["Уч. Практика (Часов)"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<MudTextField T="int" For="@(() => context.ProductionPracticeHours)" @bind-Value="context.ProductionPracticeHours" Label="@L["Пр. Практика (Часов)"]" />
+		</MudItem>
+		<MudItem xs="12" md="6">
+			<IntermediateCertificationFormAutocomplete T="int?" For="@(() => context.CertificationFormId)" @bind-Value="context.CertificationFormId" OffsetY="true" Label="Форма аттестации" />
+		</MudItem>
+	</EditFormContent>
+
+</EntityTable>
+
+@code
+{
+    [Parameter]
+	public int EducationPlanId { get; set; }
+
+	protected EntityServerTableContext<DisciplineSemesterDto, int, AddEditDisciplineSemesterCommand> Context { get; set; } = default!;
+
+	protected GetEducationPlanByIdResponse _currentEducationPlan = default!;
+	protected ICollection<IntermediateCertificationFormDto> _certificationForms = default!;
+	protected ICollection<DisciplineDto> _disciplines = default!;
+
+    protected string title = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Context = new(
+            entityName: L["DisciplineSemester"],
+            entityNamePlural: L["DisciplineSemesters"],
+            entityResource: EduResource.DisciplineSemesters,
+            fields: new()
+            {
+                new(disciplineSemester => GetDisciplineIndex(disciplineSemester.DisciplineId), L["Индекс"], "Индекс"),
+                new(disciplineSemester => GetDisciplineName(disciplineSemester.DisciplineId), L["Дисциплина"], "Дисциплина"),
+                new(disciplineSemester => disciplineSemester.SemesterNumber, L["Семестр"], "Семестр"),
+                new(disciplineSemester => disciplineSemester.WeeksCount, L["Кол-во недель"], "Кол-во недель"),
+                new(disciplineSemester => GetHoursSum(disciplineSemester), L["Всего часов"], "Всего часов"),
+                new(disciplineSemester => GetCertificationFormName(disciplineSemester.CertificationFormId), L["Аттестация"], "Аттестация"),
+            },
+            idFunc: disciplineSemester => disciplineSemester.Id,
+            searchAction: String.Empty,
+            searchFunc: async filter =>
+            {
+                var searchFilter = new SearchDisciplineSemestersRequest()
+                {
+                    EducationPlanId = EducationPlanId
+                };
+
+                var disciplineSemesters = (await DisciplineSemestersClient
+                    .SearchAsync(searchFilter))
+                    .Adapt<PaginationResponse<DisciplineSemesterDto>>();
+
+                _certificationForms = await IntermediateCertificationFormsClient.GetAllByIdRangeAsync(disciplineSemesters.Data.Select(x => x.CertificationFormId).OfType<int>().Distinct());
+                _disciplines = await DisciplinesClient.GetAllByIdRangeAsync(disciplineSemesters.Data.Select(x => x.DisciplineId).Distinct());
+                return disciplineSemesters;
+            },
+            createFunc: async disciplineSemester =>
+            {
+                if (await ApiHelper.ExecuteCallGuardedAsync(
+                    () => DisciplineSemestersClient.CreateAsync(disciplineSemester.Adapt<AddEditDisciplineSemesterCommand>()), Snackbar)
+                    is int response)
+                {
+                    await ApiHelper.ExecuteCallGuardedAsync(
+                        () => EducationPlansClient.CreateSemesterDisciplineAsync(EducationPlanId, new AddEducationPlanDisciplineSemesterCommand() { EducationPlanId = EducationPlanId, DisciplineSemesterId = response }), Snackbar);
+                }
+            },
+            updateFunc: async (id, disciplineSemester) => await DisciplineSemestersClient.UpdateAsync(id, disciplineSemester),
+            deleteFunc: async id => await DisciplineSemestersClient.DeleteAsync(id),
+            exportAction: String.Empty);
+
+        _currentEducationPlan = await EducationPlansClient.GetAsync(EducationPlanId);
+        title = "Дисциплины учебного плана: " + _currentEducationPlan!.Name;
+
+    }
+
+    private void GetBack()
+    {
+        navigationManager.NavigateTo("education/education-plans");
+    }
+
+	private int GetHoursSum(DisciplineSemesterDto disciplineSemester)
+	{
+		return disciplineSemester.TheoryLessonHours +
+						disciplineSemester.PracticeWorkHours +
+						disciplineSemester.LaboratoryWorkHours +
+						disciplineSemester.ControlWorkHours +
+						disciplineSemester.IndependentWorkHours +
+						disciplineSemester.ConsultationHours +
+						disciplineSemester.ExamHours +
+						disciplineSemester.EducationalPracticeHours +
+						disciplineSemester.ProductionPracticeHours;
+	}
+
+	private string GetDisciplineIndex(int id)
+	{
+		var result = _disciplines.FirstOrDefault(x => x.Id == id);
+		if (result is null)
+			return string.Empty;
+		return $"{result.DisciplineIndex}";
+	}
+
+	private string GetDisciplineName(int id)
+	{
+		var result = _disciplines.FirstOrDefault(x => x.Id == id);
+		if (result is null)
+			return string.Empty;
+		return $"{result.Name}";
+	}
+
+	private string GetCertificationFormName(int? id)
+	{
+		if (id is null)
+			return "Нет";
+
+		var result = _certificationForms.FirstOrDefault(x => x.Id == id);
+		if (result is null)
+			return "Нет";
+		return $"{result.Name}";
+	}
+}

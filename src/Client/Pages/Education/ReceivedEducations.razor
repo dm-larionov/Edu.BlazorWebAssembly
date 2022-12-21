@@ -1,0 +1,56 @@
+﻿@page "/education/received-educations"
+@attribute [MustHavePermission(EduAction.View, EduResource.ReceivedEducations)]
+
+@inject IStringLocalizer<ReceivedEducations> L
+@inject IReceivedEducationsClient ReceivedEducationsClient
+
+<EduTitle Title="@L["ReceivedEducations"]" Description="@L["Manage ReceivedEducations."]" />
+
+<EntityTable TEntity="ReceivedEducationDto" TId="int" TRequest="AddEditReceivedEducationCommand" Context="@Context">
+
+    <EditFormContent>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.ReceivedSpecialtyId)" @bind-Value="context.ReceivedSpecialtyId" Label="@L["Id"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.ReceivedEducationFormId)" @bind-Value="context.ReceivedEducationFormId" Label="@L["Id"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.EducationLevelId)" @bind-Value="context.EducationLevelId" Label="@L["Id"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.StudyPeriodMonths)" @bind-Value="context.StudyPeriodMonths" Label="@L["Name"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="bool" For="@(() => context.IsBudget)" @bind-Value="context.IsBudget" Label="@L["Name"]" />
+        </MudItem>
+    </EditFormContent>
+
+</EntityTable>
+
+@code
+{
+    protected EntityServerTableContext<ReceivedEducationDto, int, AddEditReceivedEducationCommand> Context { get; set; } = default!;
+
+    protected override void OnInitialized() =>
+        Context = new(
+            entityName: L["ReceivedEducation"],
+            entityNamePlural: L["ReceivedEducations"],
+            entityResource: EduResource.ReceivedEducations,
+            fields: new()
+            {
+                new(receivedEducation => receivedEducation.ReceivedSpecialtyId, L["Id"], "Id"),
+                new(receivedEducation => receivedEducation.ReceivedEducationFormId, L["Id"], "Id"),
+                new(receivedEducation => receivedEducation.EducationLevelId, L["Id"], "Id"),
+                new(receivedEducation => receivedEducation.StudyPeriodMonths, L["Name"], "Name"),
+                new(receivedEducation => receivedEducation.IsBudget, L["Name"], "Name"),
+            },
+            idFunc: receivedEducation => receivedEducation.Id,
+            searchFunc: async filter => (await ReceivedEducationsClient
+                .SearchAsync(filter.Adapt<SearchReceivedEducationsRequest>()))
+                .Adapt<PaginationResponse<ReceivedEducationDto>>(),
+            createFunc: async receivedEducation => await ReceivedEducationsClient.CreateAsync(receivedEducation.Adapt<AddEditReceivedEducationCommand>()),
+            updateFunc: async (id, receivedEducation) => await ReceivedEducationsClient.UpdateAsync(id, receivedEducation),
+            deleteFunc: async id => await ReceivedEducationsClient.DeleteAsync(id),
+            exportAction:String.Empty);
+}

@@ -1,0 +1,40 @@
+﻿@page "/education/audience-types"
+@attribute [MustHavePermission(EduAction.View, EduResource.AudienceTypes)]
+
+@inject IStringLocalizer<AudienceTypes> L
+@inject IAudienceTypesClient AudienceTypesClient
+
+<EduTitle Title="@L["AudienceTypes"]" Description="@L["Manage AudienceTypes."]" />
+
+<EntityTable TEntity="AudienceTypeDto" TId="int" TRequest="AddEditAudienceTypeCommand" Context="@Context">
+
+    <EditFormContent>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" For="@(() => context.Name)" @bind-Value="context.Name" Label="@L["Id"]" />
+        </MudItem>
+    </EditFormContent>
+
+</EntityTable>
+
+@code
+{
+    protected EntityServerTableContext<AudienceTypeDto, int, AddEditAudienceTypeCommand> Context { get; set; } = default!;
+
+    protected override void OnInitialized() =>
+        Context = new(
+            entityName: L["AudienceType"],
+            entityNamePlural: L["AudienceTypes"],
+            entityResource: EduResource.AudienceTypes,
+            fields: new()
+            {
+                new(audienceType => audienceType.Name, L["Id"], "Id"),
+            },
+            idFunc: audienceType => audienceType.Id,
+            searchFunc: async filter => (await AudienceTypesClient
+                .SearchAsync(filter.Adapt<SearchAudienceTypesRequest>()))
+                .Adapt<PaginationResponse<AudienceTypeDto>>(),
+            createFunc: async audienceType => await AudienceTypesClient.CreateAsync(audienceType.Adapt<AddEditAudienceTypeCommand>()),
+            updateFunc: async (id, audienceType) => await AudienceTypesClient.UpdateAsync(id, audienceType),
+            deleteFunc: async id => await AudienceTypesClient.DeleteAsync(id),
+            exportAction:String.Empty);
+}

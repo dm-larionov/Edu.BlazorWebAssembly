@@ -1,0 +1,52 @@
+﻿@page "/education/audiences"
+@attribute [MustHavePermission(EduAction.View, EduResource.Audiences)]
+
+@inject IStringLocalizer<Audiences> L
+@inject IAudiencesClient AudiencesClient
+
+<EduTitle Title="@L["Audiences"]" Description="@L["Manage Audiences."]" />
+
+<EntityTable TEntity="AudienceDto" TId="int" TRequest="AddEditAudienceCommand" Context="@Context">
+
+    <EditFormContent>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" For="@(() => context.Number)" @bind-Value="context.Number" Label="@L["Id"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int?" For="@(() => context.Capacity)" @bind-Value="context.Capacity" Label="@L["Id"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int?" For="@(() => context.AudienceTypeId)" @bind-Value="context.AudienceTypeId" Label="@L["Id"]"/>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int?" For="@(() => context.EmployeeHeadId)" @bind-Value="context.EmployeeHeadId" Label="@L["Name"]" />
+        </MudItem>
+    </EditFormContent>
+
+</EntityTable>
+
+@code
+{
+    protected EntityServerTableContext<AudienceDto, int, AddEditAudienceCommand> Context { get; set; } = default!;
+
+    protected override void OnInitialized() =>
+        Context = new(
+            entityName: L["Audience"],
+            entityNamePlural: L["Audiences"],
+            entityResource: EduResource.Audiences,
+            fields: new()
+            {
+                new(audience => audience.Number, L["Id"], "Id"),
+                new(audience => audience.Capacity, L["Id"], "Id"),
+                new(audience => audience.AudienceTypeId, L["Id"], "Id"),
+                new(audience => audience.EmployeeHeadId, L["Name"], "Name"),
+            },
+            idFunc: audience => audience.Id,
+            searchFunc: async filter => (await AudiencesClient
+                .SearchAsync(filter.Adapt<SearchAudiencesRequest>()))
+                .Adapt<PaginationResponse<AudienceDto>>(),
+            createFunc: async audience => await AudiencesClient.CreateAsync(audience.Adapt<AddEditAudienceCommand>()),
+            updateFunc: async (id, audience) => await AudiencesClient.UpdateAsync(id, audience),
+            deleteFunc: async id => await AudiencesClient.DeleteAsync(id),
+            exportAction:String.Empty);
+}

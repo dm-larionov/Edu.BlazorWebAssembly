@@ -1,0 +1,59 @@
+﻿@page "/home"
+@page "/"
+
+@inject IStringLocalizer<Dashboard> L
+
+<EduTitle Title="@L["Домашняя страница"]" Description="@($"Добрый день, {userName}!")" />
+
+@if (!_loaded)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="25" Class="d-flex flex-row pt-6 pb-4" Style="height:100px;">
+                <MudIcon Icon="@Icons.Filled.SupervisorAccount" Color="Color.Success" Class="mx-4"
+                Style="width:54px; height:54px;"></MudIcon>
+                <div>
+                    <MudText Typo="Typo.subtitle1" Class="mud-text-secondary mb-n1">@L["Пользователей онлайн"]</MudText>
+                    <MudText Typo="Typo.h5">@rnd.Next(1,3)</MudText>
+                </div>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="25" Class="d-flex flex-row pt-6 pb-4" Style="height:100px;">
+                <MudIcon Icon="@Icons.Filled.NotificationsActive" Color="Color.Secondary" Class="mx-4"
+                Style="width:54px; height:54px;"></MudIcon>
+                <div>
+                    <MudText Typo="Typo.subtitle1" Class="mud-text-secondary mb-n1">@L["Активных уведомлений"]</MudText>
+                    <MudText @bind-Value="@NotificationCount" Typo="Typo.h5">@NotificationCount</MudText>
+                </div>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="25" Class="d-flex flex-row pt-6 pb-4" Style="height:100px;">
+                <MudIcon Icon="@Icons.Filled.PendingActions" Color="Color.Success" Class="mx-4"
+                Style="width:54px; height:54px;"></MudIcon>
+                <div>
+                    <MudText Typo="Typo.subtitle1" Class="mud-text-secondary mb-n1">@L["Действия пользователей"]
+                    </MudText>
+                    <MudText Typo="Typo.h5">@ActionsCount</MudText>
+                </div>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="25" Class="d-flex flex-row pt-6 pb-4" Style="height:100px;">
+                <MudIcon Icon="@Icons.Filled.ErrorOutline" Color="Color.Error" Class="mx-4"
+                Style="width:54px; height:54px;"></MudIcon>
+                <div>
+                    <MudText Typo="Typo.subtitle1" Class="mud-text-secondary mb-n1">@L["Критические ошибки"]
+                    </MudText>
+                    <MudText Typo="Typo.h5">@ErrorCount</MudText>
+                </div>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+

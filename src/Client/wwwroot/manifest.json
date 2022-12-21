@@ -1,0 +1,21 @@
+{
+  "name": "Blazor WebAssembly",
+  "short_name": "Blazor WebAssembly",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3eaf7c",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "stupid-logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "stupid-logo.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ]
+}

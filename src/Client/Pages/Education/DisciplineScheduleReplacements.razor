@@ -1,0 +1,62 @@
+﻿@page "/education/discipline-schedule-replacements"
+@attribute [MustHavePermission(EduAction.View, EduResource.DisciplineScheduleReplacements)]
+
+@inject IStringLocalizer<DisciplineScheduleReplacements> L
+@inject IDisciplineScheduleReplacementsClient DisciplineScheduleReplacementsClient
+
+<EduTitle Title="@L["DisciplineScheduleReplacements"]" Description="@L["Manage DisciplineScheduleReplacements."]" />
+
+@using Edu.BlazorWebAssembly.Client.Pages.Education.Autocomplete;
+
+<EntityTable TEntity="DisciplineScheduleReplacementDto" TId="int" TRequest="AddEditDisciplineScheduleReplacementCommand" Context="@Context">
+
+    <EditFormContent>
+        <MudItem xs="12" md="6">
+            <DisciplineScheduleAutocomplete  OffsetY="true" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" Label="@L["Дисциплина"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="DateTime" For="@(() => context.Date)" @bind-Value="context.Date" Label="@L["Дата"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.PairNumber)" @bind-Value="context.PairNumber" Label="@L["Пара"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int?" For="@(() => context.AudienceId)" @bind-Value="context.AudienceId" Label="@L["Аудитория"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="bool?" For="@(() => context.IsFirstSubgroup)" @bind-Value="context.IsFirstSubgroup" Label="@L["Подгруппа"]" />
+        </MudItem>
+    </EditFormContent>
+
+</EntityTable>
+
+@code
+{
+    protected EntityServerTableContext<DisciplineScheduleReplacementDto, int, AddEditDisciplineScheduleReplacementCommand> Context { get; set; } = default!;
+
+    protected override void OnInitialized() =>
+        Context = new(
+            entityName: L["DisciplineScheduleReplacement"],
+            entityNamePlural: L["DisciplineScheduleReplacements"],
+            entityResource: EduResource.DisciplineScheduleReplacements,
+            fields: new()
+            {
+                new(disciplineScheduleReplacement => disciplineScheduleReplacement.DisciplineScheduleId, L["Id"], "Id"),
+                new(disciplineScheduleReplacement => disciplineScheduleReplacement.FixedDisciplineId, L["Id"], "Id"),
+                new(disciplineScheduleReplacement => disciplineScheduleReplacement.Date, L["Id"], "Id"),
+                new(disciplineScheduleReplacement => disciplineScheduleReplacement.PairNumber, L["Name"], "Name"),
+                new(disciplineScheduleReplacement => disciplineScheduleReplacement.AudienceId, L["Name"], "Name"),
+                new(disciplineScheduleReplacement => disciplineScheduleReplacement.IsFirstSubgroup, L["Name"], "Name"),
+            },
+            idFunc: disciplineScheduleReplacement => disciplineScheduleReplacement.Id,
+            searchFunc: async filter => (await DisciplineScheduleReplacementsClient
+                .SearchAsync(filter.Adapt<SearchDisciplineScheduleReplacementsRequest>()))
+                .Adapt<PaginationResponse<DisciplineScheduleReplacementDto>>(),
+            createFunc: async disciplineScheduleReplacement => await DisciplineScheduleReplacementsClient.CreateAsync(disciplineScheduleReplacement.Adapt<AddEditDisciplineScheduleReplacementCommand>()),
+            updateFunc: async (id, disciplineScheduleReplacement) => await DisciplineScheduleReplacementsClient.UpdateAsync(id, disciplineScheduleReplacement),
+            deleteFunc: async id => await DisciplineScheduleReplacementsClient.DeleteAsync(id),
+            exportAction:String.Empty);
+}

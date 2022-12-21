@@ -1,0 +1,213 @@
+﻿@inject IStringLocalizer<NavMenu> L
+
+<PersonCard Style="background-color: var(--mud-palette-drawer-background);color: var(--mud-palette-drawer-text); margin-bottom:0px!important" />
+<MudNavMenu>
+	<MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="ml-4 my-3">@L["Стандартное"]</MudText>
+	<MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">@L["Домашняя страница"]</MudNavLink>
+
+	@if (_canViewHangfire)
+	{
+		<MudNavLink Href="@_hangfireUrl" Match="NavLinkMatch.All" Target="_blank" Icon="@Icons.Material.Filled.Work">@L["Планировщик заданий"]</MudNavLink>
+	}
+	<MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="ml-4 my-3">@L["Персональное"]</MudText>
+	@if (false) //(_canViewDashboard)
+	{
+		<MudNavLink Href="/dashboard" Match="NavLinkMatch.All" Icon="@Icons.Filled.Dashboard">@L["Статистика"]</MudNavLink>
+	}
+	<MudNavLink Href="/account" Icon="@Icons.Filled.ManageAccounts">@L["Аккаунт"]</MudNavLink>
+	@if (_isAdmin)
+	{
+		<MudNavLink Href="/audit-logs" Icon="@Icons.Material.Filled.SecurityUpdateGood">@L["Мониторинг"]</MudNavLink>
+	}
+	<MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="ml-4 my-3">@L["Образование"]</MudText>
+	<MudNavGroup Title="Учебный процесс" Expanded Icon="@Icons.Filled.School">
+		<MudNavLink Href="/education/discipline-schedules-view" Icon="@Icons.Filled.CalendarMonth" Class="edu-nav-child">
+			@L["Расписание"]
+		</MudNavLink>
+		@if (_isHeadUmo)
+		{
+			<MudNavLink Href="/education/cathedras" Icon="@Icons.Filled.AutoStories" Class="edu-nav-child">
+				@L["Кафедры"]
+			</MudNavLink>
+
+			<MudNavLink Href="/education/disciplines" Icon="@Icons.Filled.Book" Class="edu-nav-child">
+				@L["Дисциплины"]
+			</MudNavLink>
+
+			<MudNavLink Href="/education/education-plans" Icon="@Icons.Filled.TableView" Class="edu-nav-child">
+				@L["Учебные планы"]
+			</MudNavLink>
+
+			<MudNavLink Href="/education/fixed-disciplines" Icon="@Icons.Filled.Article" Class="edu-nav-child">
+				@L["Учебная нагрузка"]
+			</MudNavLink>
+
+			<MudNavLink Href="/education/student-groups" Icon="@Icons.Filled.Elderly" Class="edu-nav-child">
+				@L["Студенческие группы"]
+			</MudNavLink>
+		}
+
+		@if (_isTeacher) // (_canViewAudiences)
+		{
+		    <MudNavLink Href="/education/fixed-disciplines/teacher" Icon="@Icons.Filled.Article" Class="edu-nav-child">
+				@L["Учебная нагрузка"]
+			</MudNavLink>
+
+		    <MudNavLink Href="/education/discipline-schedules-teacher-view" Icon="@Icons.Filled.CalendarMonth" Class="edu-nav-child">
+                @L["Моё расписание"]
+            </MudNavLink>
+		}
+
+		@if (false) // (_canViewAudiences)
+		{
+			<MudNavLink Href="/education/Student-Group-Name-Changes-test" Icon="@Icons.Filled.WheelchairPickup" Class="edu-nav-child">
+				@L["Audiences"]
+			</MudNavLink>
+		}
+		@if (false) // (_canViewAudiences)
+		{
+			<MudNavLink Href="/education/education-plans-test" Icon="@Icons.Filled.WheelchairPickup" Class="edu-nav-child">
+				@L["Audiences"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewAudiences)
+		{
+			<MudNavLink Href="/education/audiences" Icon="@Icons.Filled.SensorDoor" Class="edu-nav-child">
+				@L["Аудитории"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewAudienceTypes)
+		{
+			<MudNavLink Href="/education/audience-types" Icon="@Icons.Filled.CardGiftcard" Class="edu-nav-child">
+				@L["AudienceTypes"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewCathedras)
+		{
+			<MudNavLink Href="/education/cathedras" Icon="@Icons.Filled.AutoStories" Class="edu-nav-child">
+				@L["Кафедры"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewDisciplines)
+		{
+			<MudNavLink Href="/education/disciplines" Icon="@Icons.Filled.Book" Class="edu-nav-child">
+				@L["Дисциплины"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewDisciplineScheduleReplacements)
+		{
+			<MudNavLink Href="/education/discipline-schedule-replacements" Icon="@Icons.Filled.Today" Class="edu-nav-child">
+				@L["Замены"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewDisciplineSchedules)
+		{
+			<MudNavLink Href="/education/discipline-schedules" Icon="@Icons.Filled.CalendarMonth" Class="edu-nav-child">
+				@L["Расписание"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewEducationCycles)
+		{
+			<MudNavLink Href="/education/education-cycles" Icon="@Icons.Filled.CardGiftcard" Class="edu-nav-child">
+				@L["EducationCycles"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewEducationForms)
+		{
+			<MudNavLink Href="/education/education-forms" Icon="@Icons.Filled.CardGiftcard" Class="edu-nav-child">
+				@L["EducationForms"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewEducationLevels)
+		{
+			<MudNavLink Href="/education/education-levels" Icon="@Icons.Filled.CardGiftcard" Class="edu-nav-child">
+				@L["EducationLevels"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewEducationModules)
+		{
+			<MudNavLink Href="/education/education-modules" Icon="@Icons.Filled.CardGiftcard" Class="edu-nav-child">
+				@L["EducationModules"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewEducationPlans)
+		{
+			<MudNavLink Href="/education/education-plans" Icon="@Icons.Filled.TableView" Class="edu-nav-child">
+				@L["Учебные планы"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewEmployees)
+		{
+			<MudNavLink Href="/education/Employees" Icon="@Icons.Filled.SupervisorAccount" Class="edu-nav-child">
+				@L["Сотрудники"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewFixedDisciplines)
+		{
+			<MudNavLink Href="/education/fixed-disciplines" Icon="@Icons.Filled.Article" Class="edu-nav-child">
+				@L["Учебная нагрузка"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewFsesCategoryPartitions)
+		{
+			<MudNavLink Href="/education/fses-category-partitions" Icon="@Icons.Filled.CollectionsBookmark" Class="edu-nav-child">
+				@L["Коды специальностей"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewIntermediateCertificationForms)
+		{
+			<MudNavLink Href="/education/intermediate-certification-forms" Icon="@Icons.Filled.CardGiftcard" Class="edu-nav-child">
+				@L["IntermediateCertificationForms"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewPosts)
+		{
+			<MudNavLink Href="/education/posts" Icon="@Icons.Filled.CardGiftcard" Class="edu-nav-child">
+				@L["Posts"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewReceivedEducationForms)
+		{
+			<MudNavLink Href="/education/received-education-forms" Icon="@Icons.Filled.CardGiftcard" Class="edu-nav-child">
+				@L["ReceivedEducationForms"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewReceivedEducations)
+		{
+			<MudNavLink Href="/education/received-educations" Icon="@Icons.Filled.CardGiftcard" Class="edu-nav-child">
+				@L["ReceivedEducations"]
+			</MudNavLink>
+		}
+		@if (false) // (_canViewReceivedSpecialties)
+		{
+			<MudNavLink Href="/education/received-specialties" Icon="@Icons.Filled.CardGiftcard" Class="edu-nav-child">
+				@L["ReceivedSpecialties"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewStudentGroupNameChanges)
+		{
+			<MudNavLink Href="/education/student-group-name-changes" Icon="@Icons.Filled.CardGiftcard" Class="edu-nav-child">
+				@L["StudentGroupNameChanges"]
+			</MudNavLink>
+		}
+		@if (false) //(_canViewStudentGroups)
+		{
+			<MudNavLink Href="/education/student-groups" Icon="@Icons.Filled.Elderly" Class="edu-nav-child">
+				@L["Студенческие группы"]
+			</MudNavLink>
+		}
+	</MudNavGroup>
+
+	@if (CanViewAdministrationGroup)
+	{
+		<MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="ml-4 my-3">@L["Администрирование"]</MudText>
+		@if (_canViewUsers)
+		{
+			<MudNavLink Match="NavLinkMatch.Prefix" Href="/users" Icon="@Icons.Material.Filled.PeopleAlt">@L["Users"]</MudNavLink>
+		}
+		@if (_canViewRoles)
+		{
+			<MudNavLink Href="/roles" Icon="@Icons.Material.Filled.EmojiPeople">@L["Roles"]</MudNavLink>
+		}
+	}
+	</MudNavMenu>

@@ -1,0 +1,44 @@
+﻿@page "/education/education-cycles"
+@attribute [MustHavePermission(EduAction.View, EduResource.EducationCycles)]
+
+@inject IStringLocalizer<EducationCycles> L
+@inject IEducationCyclesClient EducationCyclesClient
+
+<EduTitle Title="@L["EducationCycles"]" Description="@L["Manage EducationCycles."]" />
+
+<EntityTable TEntity="EducationCycleDto" TId="int" TRequest="AddEditEducationCycleCommand" Context="@Context">
+
+    <EditFormContent>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" For="@(() => context.EducationCycleIndex)" @bind-Value="context.EducationCycleIndex" Label="@L["Id"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" For="@(() => context.Name)" @bind-Value="context.Name" Label="@L["Name"]" />
+        </MudItem>
+    </EditFormContent>
+
+</EntityTable>
+
+@code
+{
+    protected EntityServerTableContext<EducationCycleDto, int, AddEditEducationCycleCommand> Context { get; set; } = default!;
+
+    protected override void OnInitialized() =>
+        Context = new(
+            entityName: L["EducationCycle"],
+            entityNamePlural: L["EducationCycles"],
+            entityResource: EduResource.EducationCycles,
+            fields: new()
+            {
+                new(educationCycle => educationCycle.EducationCycleIndex, L["Id"]),
+                new(educationCycle => educationCycle.Name, L["Name"]),
+            },
+            idFunc: educationCycle => educationCycle.Id,
+            searchFunc: async filter => (await EducationCyclesClient
+                .SearchAsync(filter.Adapt<SearchEducationCyclesRequest>()))
+                .Adapt<PaginationResponse<EducationCycleDto>>(),
+            createFunc: async educationCycle => await EducationCyclesClient.CreateAsync(educationCycle.Adapt<AddEditEducationCycleCommand>()),
+            updateFunc: async (id, educationCycle) => await EducationCyclesClient.UpdateAsync(id, educationCycle),
+            deleteFunc: async id => await EducationCyclesClient.DeleteAsync(id),
+            exportAction:String.Empty);
+}

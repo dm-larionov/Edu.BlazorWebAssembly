@@ -1,0 +1,44 @@
+﻿@page "/education/received-specialties"
+@attribute [MustHavePermission(EduAction.View, EduResource.ReceivedSpecialties)]
+
+@inject IStringLocalizer<ReceivedSpecialties> L
+@inject IReceivedSpecialtiesClient ReceivedSpecialtiesClient
+
+<EduTitle Title="@L["ReceivedSpecialties"]" Description="@L["Manage ReceivedSpecialties."]" />
+
+<EntityTable TEntity="ReceivedSpecialtyDto" TId="int" TRequest="AddEditReceivedSpecialtyCommand" Context="@Context">
+
+    <EditFormContent>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.FsesCategoryPartitionId)" @bind-Value="context.FsesCategoryPartitionId" Label="@L["Id"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" For="@(() => context.Qualification)" @bind-Value="context.Qualification" Label="@L["Id"]" />
+        </MudItem>
+    </EditFormContent>
+
+</EntityTable>
+
+@code
+{
+    protected EntityServerTableContext<ReceivedSpecialtyDto, int, AddEditReceivedSpecialtyCommand> Context { get; set; } = default!;
+
+    protected override void OnInitialized() =>
+        Context = new(
+            entityName: L["ReceivedSpecialty"],
+            entityNamePlural: L["ReceivedSpecialties"],
+            entityResource: EduResource.ReceivedSpecialties,
+            fields: new()
+            {
+                new(receivedSpecialty => receivedSpecialty.FsesCategoryPartitionId, L["Id"], "Id"),
+                new(receivedSpecialty => receivedSpecialty.Qualification, L["Id"], "Id"),
+            },
+            idFunc: receivedSpecialty => receivedSpecialty.Id,
+            searchFunc: async filter => (await ReceivedSpecialtiesClient
+                .SearchAsync(filter.Adapt<SearchReceivedSpecialtiesRequest>()))
+                .Adapt<PaginationResponse<ReceivedSpecialtyDto>>(),
+            createFunc: async receivedSpecialty => await ReceivedSpecialtiesClient.CreateAsync(receivedSpecialty.Adapt<AddEditReceivedSpecialtyCommand>()),
+            updateFunc: async (id, receivedSpecialty) => await ReceivedSpecialtiesClient.UpdateAsync(id, receivedSpecialty),
+            deleteFunc: async id => await ReceivedSpecialtiesClient.DeleteAsync(id),
+            exportAction:String.Empty);
+}

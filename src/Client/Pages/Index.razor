@@ -1,0 +1,69 @@
+﻿@page "/homeh"
+@page "/h"
+
+@inject IStringLocalizer<Index> L
+
+<MudContainer>
+	<MudGrid>
+		<MudItem xs="12" sm="12" md="12">
+			<div class="d-flex justify-center mt-4">
+				@*<img src="stupid-logo.png" Style="height:250px" />*@
+				<video class="video-block__video" disablepictureinpicture autoplay plays inline muted loop preload playsinline style="height: 250px; -webkit-mask-box-image: url('mask.svg'); mask-image: url('');">
+					<source src="standing.mp4" type="video/mp4">
+				</video>
+			</div>
+		</MudItem>
+		<MudItem xs="12" sm="12" md="12">
+			<MudText Align="Align.Center" Typo="Typo.h4">@L["Peter Griffin in City Escape"]</MudText>
+		</MudItem>
+		<MudItem xs="12" sm="12" md="12">
+			<MudText>
+				Польза от супа во многом зависит от технологии приготовления и выбора ингредиентов. Например, рыбный — укрепляет кости и восстанавливает силы, куриный — выступает в качестве профилактического средства против болезней, улучшает пищеварение.
+			</MudText>
+		</MudItem>
+		<MudItem xs="12" sm="12" md="12">
+			<MudText>
+				Борщ или щи – это отличная возможность обогатить рацион овощами и мясом, а себя – макро- и микроэлементами. Разнообразие компонентов в супе помогает сбалансировать питание.
+			</MudText>
+		</MudItem>
+		<MudItem xs="12" sm="12" md="12">
+			<MudText>
+				В холодное время года заправочные супы стимулируют кровообращение и быстро согревают, наполняя организм теплом и энергией. Кроме того, суп поддерживает водно-солевой баланс, что положительно влияет на уровень артериального давления. А ещё – он хорошо усваивается и дарит чувство сытости.
+			</MudText>
+		</MudItem>
+		<MudItem xs="12" sm="12" md="12">
+			<MudExpansionPanels>
+				<MudExpansionPanel Class="mud-elevation-25" Text="@L["Что по клеймам"]">
+					@L["Список огромный жесть"]
+					<MudList Dense="true">
+						@if (Claims is not null)
+						{
+							@foreach (var claim in Claims)
+							{
+								<MudListItem>
+									<MudChip>
+										@claim.Type
+									</MudChip>
+									@claim.Value
+								</MudListItem>
+							}
+						}
+					</MudList>
+				</MudExpansionPanel>
+			</MudExpansionPanels>
+		</MudItem>
+	</MudGrid>
+</MudContainer>
+
+@code {
+	[CascadingParameter]
+	public Task<AuthenticationState> AuthState { get; set; } = default!;
+
+	public IEnumerable<Claim>? Claims { get; set; }
+
+	protected override async Task OnInitializedAsync()
+	{
+		var authState = await AuthState;
+	    Claims = authState.User.Claims;
+	}
+}

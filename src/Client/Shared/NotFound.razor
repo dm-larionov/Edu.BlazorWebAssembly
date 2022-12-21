@@ -1,0 +1,52 @@
+﻿@using Infrastructure.Theme
+@inherits LayoutComponentBase
+
+<style>
+	body {
+		min-height: 100vh;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		background: linear-gradient(to top left,#00193b,#00132d);
+		font-family: 'Roboto', Arial;
+	}
+</style>
+
+<MudThemeProvider Theme="_currentTheme" />
+<MudSnackbarProvider />
+
+<MudContainer MaxWidth="MaxWidth.Small">
+	<div class="d-flex flex-column">
+		<nav class="shelf">
+			<a class="book home-page">Расписание</a>
+			<a class="book about-us">Отчёты</a>
+			<a class="book contact">Заявки</a>
+			<a class="book faq">Дисциплины</a>
+
+			<span class="book not-found"></span>
+
+			<span class="door left"></span>
+			<span class="door right"></span>
+		</nav>
+
+		<MudText Typo="Typo.h5" Class="mt-6" Align="Align.Center">Мы перерыли все полки, однако нужная вам страница не нашлась...</MudText>
+        <br/>
+		<MudButton Variant="Variant.Filled" Style="alignment: center" Color="Color.Primary" Size="Size.Large" Link="/">На главную</MudButton>
+
+	</div>
+</MudContainer>
+
+@code {
+	private MudTheme _currentTheme = new LightTheme();
+
+	protected override async Task OnInitializedAsync()
+	{
+		_currentTheme = new LightTheme();
+		_currentTheme = await ClientPreferences.GetCurrentThemeAsync();
+	}
+}
+
+
+
+
+

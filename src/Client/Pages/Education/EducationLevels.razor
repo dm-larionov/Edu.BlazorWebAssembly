@@ -1,0 +1,40 @@
+﻿@page "/education/education-levels"
+@attribute [MustHavePermission(EduAction.View, EduResource.EducationLevels)]
+
+@inject IStringLocalizer<EducationLevels> L
+@inject IEducationLevelsClient EducationLevelsClient
+
+<EduTitle Title="@L["EducationLevels"]" Description="@L["Manage EducationLevels."]" />
+
+<EntityTable TEntity="EducationLevelDto" TId="int" TRequest="AddEditEducationLevelCommand" Context="@Context">
+
+    <EditFormContent>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" For="@(() => context.Name)" @bind-Value="context.Name" Label="@L["Name"]" />
+        </MudItem>
+    </EditFormContent>
+
+</EntityTable>
+
+@code
+{
+    protected EntityServerTableContext<EducationLevelDto, int, AddEditEducationLevelCommand> Context { get; set; } = default!;
+
+    protected override void OnInitialized() =>
+        Context = new(
+            entityName: L["EducationLevel"],
+            entityNamePlural: L["EducationLevels"],
+            entityResource: EduResource.EducationLevels,
+            fields: new()
+            {
+                new(audience => audience.Name, L["Name"]),
+            },
+            idFunc: audience => audience.Id,
+            searchFunc: async filter => (await EducationLevelsClient
+                .SearchAsync(filter.Adapt<SearchEducationLevelsRequest>()))
+                .Adapt<PaginationResponse<EducationLevelDto>>(),
+            createFunc: async audience => await EducationLevelsClient.CreateAsync(audience.Adapt<AddEditEducationLevelCommand>()),
+            updateFunc: async (id, audience) => await EducationLevelsClient.UpdateAsync(id, audience),
+            deleteFunc: async id => await EducationLevelsClient.DeleteAsync(id),
+            exportAction:String.Empty);
+}

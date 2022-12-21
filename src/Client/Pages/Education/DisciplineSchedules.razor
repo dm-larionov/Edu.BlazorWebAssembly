@@ -1,0 +1,80 @@
+﻿@page "/education/discipline-schedules"
+@attribute [MustHavePermission(EduAction.View, EduResource.DisciplineSchedules)]
+
+@inject IStringLocalizer<DisciplineSchedules> L
+@inject IDisciplineSchedulesClient DisciplineSchedulesClient
+
+@inject IFixedDisciplinesClient FixedDisciplinesClient
+@inject IDisciplineSemestersClient DisciplineSemestersClient
+@inject IDisciplinesClient DisciplinesClient
+
+@using Edu.BlazorWebAssembly.Client.Pages.Education.Autocomplete;
+
+<EduTitle Title="@L["DisciplineSchedules"]" Description="@L["Manage DisciplineSchedules."]" />
+
+<EntityTable TEntity="DisciplineScheduleDto" TId="int" TRequest="AddEditDisciplineScheduleCommand" Context="@Context">
+    <EditFormContent>
+        <MudItem xs="12" md="6">
+            <FixedDisciplineAutocomplete For="@(() => context.FixedDisciplineId)" @bind-Value="context.FixedDisciplineId" OffsetY="true" Label="@L["Закр. дисц."]"/>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="DateTime" For="@(() => context.Date)" @bind-Value="context.Date" Label="@L["Дата"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="int" For="@(() => context.PairNumber)" @bind-Value="context.PairNumber" Label="@L["Номер пары"]" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <AudienceAutocomplete For="@(() => context.AudienceId)" @bind-Value="context.AudienceId" OffsetY="true" Label="@L["Аудитория"]"/>
+        </MudItem>
+    </EditFormContent>
+</EntityTable>
+
+@code
+{
+    protected EntityServerTableContext<DisciplineScheduleDto, int, AddEditDisciplineScheduleCommand> Context { get; set; } = default!;
+
+    protected ICollection<FixedDisciplineDto> _fixedDisciplines = default!;
+    protected ICollection<DisciplineDto> _disciplines = default!;
+    protected ICollection<DisciplineSemesterDto> _disciplineSemesters = default!;
+    protected ICollection<AudienceDto> _audiences = default!;
+
+    protected override void OnInitialized() =>
+        Context = new(
+            entityName: L["DisciplineSchedule"],
+            entityNamePlural: L["DisciplineSchedules"],
+            entityResource: EduResource.DisciplineSchedules,
+            fields: new()
+            {
+                new(disciplineSchedule => GetDisciplineNameByFixedDisciplineId(disciplineSchedule.FixedDisciplineId), L["Дисциплина"], "Id"),
+                new(disciplineSchedule => disciplineSchedule.Date.ToShortDateString(), L["Дата"], "Id"),
+                new(disciplineSchedule => disciplineSchedule.PairNumber, L["Пара"], "Id"),
+                new(disciplineSchedule => disciplineSchedule.AudienceId, L["Аудитория"], "Name"),
+            },
+            idFunc: disciplineSchedule => disciplineSchedule.Id,
+            searchFunc: async filter =>
+            {
+                var schedule = (await DisciplineSchedulesClient
+                    .SearchAsync(filter.Adapt<SearchDisciplineSchedulesRequest>()))
+                    .Adapt<PaginationResponse<DisciplineScheduleDto>>();
+
+
+                _fixedDisciplines = await FixedDisciplinesClient.GetAllByIdRangeAsync(schedule.Data.Select(x => x.FixedDisciplineId).Distinct());
+                _disciplineSemesters = await DisciplineSemestersClient.GetAllByIdRangeAsync(_fixedDisciplines.Select(x => x.DisciplineSemesterId).Distinct());
+                _disciplines = await DisciplinesClient.GetAllByIdRangeAsync(_disciplineSemesters.Select(x => x.DisciplineId).Distinct());
+                return schedule;
+            },
+            createFunc: async disciplineSchedule => await DisciplineSchedulesClient.CreateAsync(disciplineSchedule.Adapt<AddEditDisciplineScheduleCommand>()),
+            updateFunc: async (id, disciplineSchedule) => await DisciplineSchedulesClient.UpdateAsync(id, disciplineSchedule),
+            deleteFunc: async id => await DisciplineSchedulesClient.DeleteAsync(id),
+            exportAction:String.Empty);
+
+    private string GetDisciplineNameByFixedDisciplineId(int id)
+    {
+		var fixedDiscipline = _fixedDisciplines.FirstOrDefault(x => x.Id == id);
+		var disciplineSemester = _disciplineSemesters.FirstOrDefault(x => x.Id == fixedDiscipline.DisciplineSemesterId);
+        var result = _disciplines.FirstOrDefault(x => x.Id == disciplineSemester.DisciplineId);
+        if (result is null)
+            return string.Empty;
+        return $"{result.Name}";
+    }
+}
